@@ -1,0 +1,11 @@
+{
+  "name": "@drift/plugin-slack",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Official Drift plugin: Slack messaging integration",
+  "dependencies": {
+    "@drift/entity-sdk": "*",
+    "@slack/web-api": "^7.14.1",
+    "zod": "^3.22.0"
+  }
+}

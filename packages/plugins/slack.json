@@ -1,0 +1,28 @@
+{
+  "id": "slack",
+  "type": "plugin",
+  "displayName": "Slack",
+  "description": "Slack messaging with channels, messages, and threads.",
+  "author": {
+    "name": "Drift Team"
+  },
+  "license": "MIT",
+  "repository": "hellodrift/store",
+  "path": "dist/slack",
+  "latest": "0.1.0",
+  "versions": {
+    "0.1.0": {
+      "ref": "main",
+      "driftCompat": ">=0.8.0",
+      "publishedAt": "2026-02-16T16:07:55.411Z"
+    }
+  },
+  "keywords": [],
+  "icon": "message-square",
+  "provides": {
+    "integrations": [
+      "slack"
+    ]
+  },
+  "verified": true
+}

@@ -1,0 +1,80 @@
+[
+  {
+    "id": "linear-example",
+    "type": "plugin",
+    "displayName": "Linear",
+    "description": "Linear issue tracking with GraphQL integration.",
+    "author": {
+      "name": "Drift Team"
+    },
+    "license": "MIT",
+    "repository": "hellodrift/store",
+    "path": "dist/linear-example",
+    "latest": "0.3.0",
+    "versions": {
+      "0.3.0": {
+        "ref": "main",
+        "driftCompat": ">=0.8.0",
+        "publishedAt": "2026-02-16T16:07:55.411Z"
+      }
+    },
+    "keywords": [],
+    "icon": "ticket",
+    "provides": {
+      "integrations": [
+        "linear"
+      ]
+    },
+    "verified": true
+  },
+  {
+    "id": "mobile-notification",
+    "type": "plugin",
+    "displayName": "Mobile Notifications",
+    "description": "Send push notifications to your mobile devices",
+    "author": {
+      "name": "Drift Team"
+    },
+    "license": "MIT",
+    "repository": "hellodrift/store",
+    "path": "dist/mobile-notification",
+    "latest": "0.1.0",
+    "versions": {
+      "0.1.0": {
+        "ref": "main",
+        "driftCompat": ">=0.8.0",
+        "publishedAt": "2026-02-16T16:07:55.411Z"
+      }
+    },
+    "keywords": [],
+    "verified": true
+  },
+  {
+    "id": "slack",
+    "type": "plugin",
+    "displayName": "Slack",
+    "description": "Slack messaging with channels, messages, and threads.",
+    "author": {
+      "name": "Drift Team"
+    },
+    "license": "MIT",
+    "repository": "hellodrift/store",
+    "path": "dist/slack",
+    "latest": "0.1.0",
+    "versions": {
+      "0.1.0": {
+        "ref": "main",
+        "driftCompat": ">=0.8.0",
+        "publishedAt": "2026-02-16T16:07:55.411Z"
+      }
+    },
+    "keywords": [],
+    "icon": "message-square",
+    "provides": {
+      "integrations": [
+        "slack"
+      ]
+    },
+    "verified": true
+  }
+]

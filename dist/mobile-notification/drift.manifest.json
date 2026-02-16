@@ -1,0 +1,6 @@
+{
+  "name": "mobile-notification",
+  "displayName": "Mobile Notifications",
+  "description": "Send push notifications to your mobile devices",
+  "version": "0.1.0"
+}

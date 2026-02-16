@@ -1,0 +1,10 @@
+{
+  "name": "@drift/plugin-mobile-notification",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Official Drift plugin: Send push notifications to your mobile devices",
+  "dependencies": {
+    "@drift/entity-sdk": "*",
+    "zod": "^3.22.0"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "slack",
+  "displayName": "Slack",
+  "description": "Slack messaging with channels, messages, and threads.",
+  "version": "0.1.0",
+  "integrations": ["slack"],
+  "graphql": {
+    "schema": "schema.graphql",
+    "resolvers": "resolvers.ts"
+  },
+  "canvases": {
+    "nav-sidebar": {
+      "component": "components/NavSection.tsx",
+      "label": "Slack",
+      "icon": "message-square",
+      "priority": 40
+    },
+    "drawer": {
+      "component": "components/SettingsDrawer.tsx"
+    },
+    "entity-drawer": [
+      { "component": "components/MessageDrawer.tsx", "entityType": "slack_message" },
+      { "component": "components/ChannelDrawer.tsx", "entityType": "slack_channel" }
+    ],
+    "entity-widget": [
+      { "component": "components/SlackMessageWidget.tsx", "entityType": "slack_message" },
+      { "component": "components/SlackChannelWidget.tsx", "entityType": "slack_channel" }
+    ]
+  }
+}

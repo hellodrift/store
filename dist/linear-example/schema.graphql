@@ -1,0 +1,152 @@
+type LinearIssue {
+  id: ID!
+  type: String!
+  uri: String!
+  title: String!
+  identifier: String
+  status: String
+  stateId: String
+  stateName: String
+  priority: Int!
+  priorityLabel: String
+  assigneeId: String
+  assigneeName: String
+  teamId: String
+  teamName: String
+  teamKey: String
+  labels: [LinearIssueLabel!]
+  labelNames: String
+  projectId: String
+  projectName: String
+  cycleId: String
+  cycleName: String
+  estimate: Int
+  dueDate: String
+  parentId: String
+  description: String
+  url: String
+  createdAt: String
+  updatedAt: String
+  linkedContext: String
+}
+
+type LinearIssueLabel {
+  id: String!
+  name: String!
+  color: String!
+}
+
+type LinearWorkflowState {
+  id: ID!
+  name: String!
+  color: String!
+  type: String!
+}
+
+type LinearUser {
+  id: ID!
+  name: String!
+  displayName: String
+  email: String
+  active: Boolean!
+}
+
+type LinearTeam {
+  id: ID!
+  name: String!
+  key: String!
+}
+
+type LinearProject {
+  id: ID!
+  name: String!
+  status: String
+}
+
+type LinearCycle {
+  id: ID!
+  name: String
+  number: Int!
+  startsAt: String
+  endsAt: String
+  isActive: Boolean!
+}
+
+type LinearComment {
+  id: ID!
+  body: String!
+  authorName: String
+  createdAt: String!
+  updatedAt: String
+}
+
+type LinearIssueRelation {
+  id: ID!
+  type: String!
+  relatedIssueId: String!
+  relatedIssueIdentifier: String
+  relatedIssueTitle: String
+}
+
+type LinearSubIssue {
+  id: ID!
+  title: String!
+  identifier: String
+  status: String
+  stateName: String
+  priority: Int
+  priorityLabel: String
+  assigneeName: String
+}
+
+extend type Query {
+  linearIssue(id: ID!): LinearIssue
+  linearIssues(query: String, teamId: ID, limit: Int, assignmentFilter: String, statusTypes: [String!]): [LinearIssue!]!
+  linearWorkflowStates(teamId: ID!): [LinearWorkflowState!]!
+  linearTeamMembers(teamId: ID): [LinearUser!]!
+  linearLabels(teamId: ID): [LinearIssueLabel!]!
+  linearTeams: [LinearTeam!]!
+  linearProjects(teamId: ID): [LinearProject!]!
+  linearCycles(teamId: ID!): [LinearCycle!]!
+  linearComments(issueId: ID!): [LinearComment!]!
+  linearIssueRelations(issueId: ID!): [LinearIssueRelation!]!
+  linearSubIssues(issueId: ID!): [LinearSubIssue!]!
+}
+
+extend type Mutation {
+  createLinearIssue(input: CreateLinearIssueInput!): EntityActionResult!
+  updateLinearIssue(id: ID!, input: UpdateLinearIssueInput!): EntityActionResult!
+  deleteLinearIssue(id: ID!): EntityActionResult!
+  addLinearComment(issueId: ID!, body: String!): EntityActionResult!
+  createLinearLabel(name: String!, color: String, teamId: ID): EntityActionResult!
+}
+
+input CreateLinearIssueInput {
+  title: String!
+  description: String
+  teamId: String!
+  priority: Int
+  assigneeId: String
+  stateId: String
+  labelIds: [String!]
+  projectId: String
+  cycleId: String
+  parentId: String
+  estimate: Int
+  dueDate: String
+}
+
+input UpdateLinearIssueInput {
+  title: String
+  description: String
+  priority: Int
+  assigneeId: String
+  stateId: String
+  labelIds: [String!]
+  projectId: String
+  cycleId: String
+  estimate: Int
+  dueDate: String
+  teamId: String
+  parentId: String
+}

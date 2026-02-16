@@ -1,0 +1,30 @@
+{
+  "name": "linear-example",
+  "displayName": "Linear",
+  "description": "Linear issue tracking with GraphQL integration.",
+  "version": "0.3.0",
+  "integrations": ["linear"],
+  "graphql": {
+    "schema": "schema.graphql",
+    "resolvers": "resolvers.ts"
+  },
+  "canvases": {
+    "nav-sidebar": {
+      "component": "components/NavSection.tsx",
+      "label": "Linear",
+      "icon": "ticket",
+      "priority": 50
+    },
+    "entity-drawer": {
+      "component": "components/TicketDrawer.tsx",
+      "entityType": "linear_issue"
+    },
+    "entity-widget": {
+      "component": "components/LinearWidget.tsx",
+      "entityType": "linear_issue"
+    },
+    "drawer": {
+      "component": "components/SettingsDrawer.tsx"
+    }
+  }
+}

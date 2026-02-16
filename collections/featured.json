@@ -1,0 +1,19 @@
+{
+  "id": "featured",
+  "title": "Featured Packages",
+  "description": "Essential packages to get the most out of Drift",
+  "packages": [
+    {
+      "type": "plugin",
+      "id": "linear-example"
+    },
+    {
+      "type": "plugin",
+      "id": "mobile-notification"
+    },
+    {
+      "type": "plugin",
+      "id": "slack"
+    }
+  ]
+}

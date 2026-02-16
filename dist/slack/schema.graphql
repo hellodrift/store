@@ -1,0 +1,69 @@
+type SlackMessage {
+  id: ID!
+  type: String!
+  uri: String!
+  text: String!
+  userId: String!
+  userName: String
+  userAvatar: String
+  channelId: String!
+  channelName: String
+  ts: String!
+  threadTs: String
+  replyCount: Int
+  reactions: [SlackReaction!]
+  timestamp: String
+  url: String
+  linkedContext: String
+}
+
+type SlackChannel {
+  id: ID!
+  name: String!
+  isPrivate: Boolean!
+  isIm: Boolean!
+  isMpim: Boolean!
+  isArchived: Boolean
+  topic: String
+  purpose: String
+  memberCount: Int
+  unreadCount: Int
+}
+
+type SlackUser {
+  id: ID!
+  name: String!
+  displayName: String
+  avatar: String
+  isBot: Boolean
+}
+
+type SlackThread {
+  channelId: String!
+  threadTs: String!
+  messages: [SlackMessage!]!
+  replyCount: Int!
+}
+
+type SlackReaction {
+  name: String!
+  count: Int!
+}
+
+extend type Query {
+  slackMessage(channelId: ID!, ts: String!): SlackMessage
+  slackMessages(channelId: ID!, limit: Int, before: String): [SlackMessage!]!
+  slackChannels(types: String, limit: Int): [SlackChannel!]!
+  slackChannel(id: ID!): SlackChannel
+  slackThread(channelId: ID!, threadTs: String!): SlackThread
+  slackUsers(limit: Int): [SlackUser!]!
+  slackSearchMessages(query: String!, limit: Int): [SlackMessage!]!
+}
+
+extend type Mutation {
+  sendSlackMessage(channelId: ID!, text: String!, threadTs: String): EntityActionResult!
+  editSlackMessage(channelId: ID!, ts: String!, text: String!): EntityActionResult!
+  deleteSlackMessage(channelId: ID!, ts: String!): EntityActionResult!
+  addSlackReaction(channelId: ID!, ts: String!, emoji: String!): EntityActionResult!
+  markSlackChannelRead(channelId: ID!, ts: String!): EntityActionResult!
+}
