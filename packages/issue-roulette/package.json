@@ -1,0 +1,6 @@
+{
+  "name": "@drift/plugin-issue-roulette",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Official Drift plugin: Issue Roulette — spin the wheel, pick your fate"
+}

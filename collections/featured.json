@@ -5,6 +5,7 @@
   "packages": [
     "linear-example",
     "mobile-notification",
-    "slack"
+    "slack",
+    "issue-roulette"
   ]
 }
