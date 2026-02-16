@@ -1,0 +1,85 @@
+{
+  "id": "slack",
+  "displayName": "Slack",
+  "description": "Slack messaging with channels, messages, and threads.",
+  "author": {
+    "name": "Drift Team"
+  },
+  "license": "MIT",
+  "repository": "hellodrift/store",
+  "path": "packages/slack",
+  "latest": "0.1.0",
+  "versions": {
+    "0.1.0": {
+      "ref": "main",
+      "driftCompat": ">=0.8.0",
+      "publishedAt": "2026-02-16T21:15:42.498Z"
+    }
+  },
+  "keywords": [],
+  "icon": "message-square",
+  "provides": {
+    "integrations": [
+      "slack"
+    ],
+    "canvases": [
+      "nav-sidebar",
+      "drawer",
+      "entity-drawer",
+      "entity-widget"
+    ],
+    "entities": [
+      "slack_channel",
+      "slack_message"
+    ],
+    "operations": [
+      {
+        "id": "list_channels",
+        "description": "List Slack channels, DMs, and group conversations"
+      },
+      {
+        "id": "list_users",
+        "description": "List workspace members"
+      },
+      {
+        "id": "get_channel_info",
+        "description": "Get detailed channel information"
+      },
+      {
+        "id": "search_messages",
+        "description": "Search Slack messages"
+      },
+      {
+        "id": "send_message",
+        "description": "Send a message to a Slack channel",
+        "mutation": true
+      },
+      {
+        "id": "reply_to_thread",
+        "description": "Reply to a thread in Slack",
+        "mutation": true
+      },
+      {
+        "id": "add_reaction",
+        "description": "Add an emoji reaction to a message",
+        "mutation": true
+      },
+      {
+        "id": "edit_message",
+        "description": "Edit an existing Slack message",
+        "mutation": true
+      },
+      {
+        "id": "delete_message",
+        "description": "Delete a Slack message",
+        "mutation": true
+      },
+      {
+        "id": "mark_read",
+        "description": "Mark a conversation as read up to a given timestamp",
+        "mutation": true
+      }
+    ]
+  },
+  "verified": true
+}

@@ -1,0 +1,108 @@
+{
+  "id": "linear-example",
+  "displayName": "Linear",
+  "description": "Linear issue tracking with GraphQL integration.",
+  "author": {
+    "name": "Drift Team"
+  },
+  "license": "MIT",
+  "repository": "hellodrift/store",
+  "path": "packages/linear-example",
+  "latest": "0.3.0",
+  "versions": {
+    "0.3.0": {
+      "ref": "main",
+      "driftCompat": ">=0.8.0",
+      "publishedAt": "2026-02-16T21:15:42.497Z"
+    }
+  },
+  "keywords": [],
+  "icon": "ticket",
+  "provides": {
+    "integrations": [
+      "linear"
+    ],
+    "canvases": [
+      "nav-sidebar",
+      "entity-drawer",
+      "entity-widget",
+      "drawer"
+    ],
+    "entities": [
+      "linear_issue"
+    ],
+    "operations": [
+      {
+        "id": "list_teams",
+        "description": "Discover available Linear teams and their IDs"
+      },
+      {
+        "id": "list_members",
+        "description": "Discover team members or all workspace users"
+      },
+      {
+        "id": "list_states",
+        "description": "Discover workflow states for a team"
+      },
+      {
+        "id": "list_labels",
+        "description": "Discover available labels"
+      },
+      {
+        "id": "list_projects",
+        "description": "Discover available projects"
+      },
+      {
+        "id": "list_cycles",
+        "description": "Discover sprint cycles for a team"
+      },
+      {
+        "id": "edit_issue",
+        "description": "Edit an existing Linear issue",
+        "mutation": true
+      },
+      {
+        "id": "delete_issue",
+        "description": "Delete a Linear issue permanently",
+        "mutation": true
+      },
+      {
+        "id": "archive_issue",
+        "description": "Archive a Linear issue (reversible soft-delete)",
+        "mutation": true
+      },
+      {
+        "id": "unarchive_issue",
+        "description": "Unarchive a previously archived Linear issue",
+        "mutation": true
+      },
+      {
+        "id": "create_issue_relation",
+        "description": "Create a relation between two issues",
+        "mutation": true
+      },
+      {
+        "id": "delete_issue_relation",
+        "description": "Delete a relation between two issues",
+        "mutation": true
+      },
+      {
+        "id": "list_issue_relations",
+        "description": "List all relations for an issue"
+      },
+      {
+        "id": "list_comments",
+        "description": "List comments on an issue"
+      },
+      {
+        "id": "search_issues",
+        "description": "Full-text search for Linear issues"
+      },
+      {
+        "id": "create_issue",
+        "description": "Create a new Linear issue"
+      }
+    ]
+  },
+  "verified": true
+}

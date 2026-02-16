@@ -7,15 +7,26 @@
   },
   "license": "MIT",
   "repository": "hellodrift/store",
-  "path": "dist/mobile-notification",
+  "path": "packages/mobile-notification",
   "latest": "0.1.0",
   "versions": {
     "0.1.0": {
       "ref": "main",
       "driftCompat": ">=0.8.0",
-      "publishedAt": "2026-02-16T17:15:58.655Z"
+      "publishedAt": "2026-02-16T21:15:42.498Z"
     }
   },
   "keywords": [],
+  "provides": {
+    "entities": [
+      "mobile_notification"
+    ],
+    "operations": [
+      {
+        "id": "send_notification",
+        "description": "Send a push notification to your own mobile devices"
+      }
+    ]
+  },
   "verified": true
 }

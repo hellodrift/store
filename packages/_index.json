@@ -8,13 +8,13 @@
     },
     "license": "MIT",
     "repository": "hellodrift/store",
-    "path": "dist/linear-example",
+    "path": "packages/linear-example",
     "latest": "0.3.0",
     "versions": {
       "0.3.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-16T17:15:58.655Z"
+        "publishedAt": "2026-02-16T21:15:42.497Z"
       }
     },
     "keywords": [],
@@ -28,6 +28,81 @@
         "entity-drawer",
         "entity-widget",
         "drawer"
+      ],
+      "entities": [
+        "linear_issue"
+      ],
+      "operations": [
+        {
+          "id": "list_teams",
+          "description": "Discover available Linear teams and their IDs"
+        },
+        {
+          "id": "list_members",
+          "description": "Discover team members or all workspace users"
+        },
+        {
+          "id": "list_states",
+          "description": "Discover workflow states for a team"
+        },
+        {
+          "id": "list_labels",
+          "description": "Discover available labels"
+        },
+        {
+          "id": "list_projects",
+          "description": "Discover available projects"
+        },
+        {
+          "id": "list_cycles",
+          "description": "Discover sprint cycles for a team"
+        },
+        {
+          "id": "edit_issue",
+          "description": "Edit an existing Linear issue",
+          "mutation": true
+        },
+        {
+          "id": "delete_issue",
+          "description": "Delete a Linear issue permanently",
+          "mutation": true
+        },
+        {
+          "id": "archive_issue",
+          "description": "Archive a Linear issue (reversible soft-delete)",
+          "mutation": true
+        },
+        {
+          "id": "unarchive_issue",
+          "description": "Unarchive a previously archived Linear issue",
+          "mutation": true
+        },
+        {
+          "id": "create_issue_relation",
+          "description": "Create a relation between two issues",
+          "mutation": true
+        },
+        {
+          "id": "delete_issue_relation",
+          "description": "Delete a relation between two issues",
+          "mutation": true
+        },
+        {
+          "id": "list_issue_relations",
+          "description": "List all relations for an issue"
+        },
+        {
+          "id": "list_comments",
+          "description": "List comments on an issue"
+        },
+        {
+          "id": "search_issues",
+          "description": "Full-text search for Linear issues"
+        },
+        {
+          "id": "create_issue",
+          "description": "Create a new Linear issue"
+        }
       ]
     },
     "verified": true
@@ -41,16 +116,27 @@
     },
     "license": "MIT",
     "repository": "hellodrift/store",
-    "path": "dist/mobile-notification",
+    "path": "packages/mobile-notification",
     "latest": "0.1.0",
     "versions": {
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-16T17:15:58.655Z"
+        "publishedAt": "2026-02-16T21:15:42.498Z"
       }
     },
     "keywords": [],
+    "provides": {
+      "entities": [
+        "mobile_notification"
+      ],
+      "operations": [
+        {
+          "id": "send_notification",
+          "description": "Send a push notification to your own mobile devices"
+        }
+      ]
+    },
     "verified": true
   },
   {
@@ -62,13 +148,13 @@
     },
     "license": "MIT",
     "repository": "hellodrift/store",
-    "path": "dist/slack",
+    "path": "packages/slack",
     "latest": "0.1.0",
     "versions": {
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-16T17:15:58.655Z"
+        "publishedAt": "2026-02-16T21:15:42.498Z"
       }
     },
     "keywords": [],
@@ -82,6 +168,58 @@
         "drawer",
         "entity-drawer",
         "entity-widget"
+      ],
+      "entities": [
+        "slack_channel",
+        "slack_message"
+      ],
+      "operations": [
+        {
+          "id": "list_channels",
+          "description": "List Slack channels, DMs, and group conversations"
+        },
+        {
+          "id": "list_users",
+          "description": "List workspace members"
+        },
+        {
+          "id": "get_channel_info",
+          "description": "Get detailed channel information"
+        },
+        {
+          "id": "search_messages",
+          "description": "Search Slack messages"
+        },
+        {
+          "id": "send_message",
+          "description": "Send a message to a Slack channel",
+          "mutation": true
+        },
+        {
+          "id": "reply_to_thread",
+          "description": "Reply to a thread in Slack",
+          "mutation": true
+        },
+        {
+          "id": "add_reaction",
+          "description": "Add an emoji reaction to a message",
+          "mutation": true
+        },
+        {
+          "id": "edit_message",
+          "description": "Edit an existing Slack message",
+          "mutation": true
+        },
+        {
+          "id": "delete_message",
+          "description": "Delete a Slack message",
+          "mutation": true
+        },
+        {
+          "id": "mark_read",
+          "description": "Mark a conversation as read up to a given timestamp",
+          "mutation": true
+        }
       ]
     },
     "verified": true
