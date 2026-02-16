@@ -1,6 +1,5 @@
 {
   "id": "linear-example",
-  "type": "plugin",
   "displayName": "Linear",
   "description": "Linear issue tracking with GraphQL integration.",
   "author": {
@@ -14,7 +13,7 @@
     "0.3.0": {
       "ref": "main",
       "driftCompat": ">=0.8.0",
-      "publishedAt": "2026-02-16T16:07:55.411Z"
+      "publishedAt": "2026-02-16T16:59:16.238Z"
     }
   },
   "keywords": [],
@@ -22,6 +21,12 @@
   "provides": {
     "integrations": [
       "linear"
+    ],
+    "canvases": [
+      "nav-sidebar",
+      "entity-drawer",
+      "entity-widget",
+      "drawer"
     ]
   },
   "verified": true

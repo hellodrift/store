@@ -1,6 +1,5 @@
 {
   "id": "slack",
-  "type": "plugin",
   "displayName": "Slack",
   "description": "Slack messaging with channels, messages, and threads.",
   "author": {
@@ -14,7 +13,7 @@
     "0.1.0": {
       "ref": "main",
       "driftCompat": ">=0.8.0",
-      "publishedAt": "2026-02-16T16:07:55.411Z"
+      "publishedAt": "2026-02-16T16:59:16.238Z"
     }
   },
   "keywords": [],
@@ -22,6 +21,12 @@
   "provides": {
     "integrations": [
       "slack"
+    ],
+    "canvases": [
+      "nav-sidebar",
+      "drawer",
+      "entity-drawer",
+      "entity-widget"
     ]
   },
   "verified": true

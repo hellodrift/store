@@ -1,7 +1,6 @@
 [
   {
     "id": "linear-example",
-    "type": "plugin",
     "displayName": "Linear",
     "description": "Linear issue tracking with GraphQL integration.",
     "author": {
@@ -15,7 +14,7 @@
       "0.3.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-16T16:07:55.411Z"
+        "publishedAt": "2026-02-16T16:59:16.238Z"
       }
     },
     "keywords": [],
@@ -23,13 +22,18 @@
     "provides": {
       "integrations": [
         "linear"
+      ],
+      "canvases": [
+        "nav-sidebar",
+        "entity-drawer",
+        "entity-widget",
+        "drawer"
       ]
     },
     "verified": true
   },
   {
     "id": "mobile-notification",
-    "type": "plugin",
     "displayName": "Mobile Notifications",
     "description": "Send push notifications to your mobile devices",
     "author": {
@@ -43,7 +47,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-16T16:07:55.411Z"
+        "publishedAt": "2026-02-16T16:59:16.238Z"
       }
     },
     "keywords": [],
@@ -51,7 +55,6 @@
   },
   {
     "id": "slack",
-    "type": "plugin",
     "displayName": "Slack",
     "description": "Slack messaging with channels, messages, and threads.",
     "author": {
@@ -65,7 +68,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-16T16:07:55.411Z"
+        "publishedAt": "2026-02-16T16:59:16.238Z"
       }
     },
     "keywords": [],
@@ -73,6 +76,12 @@
     "provides": {
       "integrations": [
         "slack"
+      ],
+      "canvases": [
+        "nav-sidebar",
+        "drawer",
+        "entity-drawer",
+        "entity-widget"
       ]
     },
     "verified": true
