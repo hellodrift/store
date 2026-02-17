@@ -331,7 +331,7 @@ export default function TicketDrawerContent({
         {activeWorkstreams && (
           <WorkstreamHeaderAction
             entityId={issue.id}
-            entityTitle={issue.identifier || issue.title}
+            entityTitle={issue.identifier ? `${issue.identifier} ${issue.title}` : issue.title}
             linkedWorkstreams={linkedWorkstreams}
             activeWorkstreams={activeWorkstreams}
             onStartWorkstream={onStartWorkstream}
@@ -846,7 +846,7 @@ export default function TicketDrawerContent({
             <WorkstreamSection
               workstreams={linkedWorkstreams ?? []}
               entityId={issue.id}
-              entityTitle={issue.identifier || issue.title}
+              entityTitle={issue.identifier ? `${issue.identifier} ${issue.title}` : issue.title}
               activeWorkstreams={activeWorkstreams}
               onRemove={onUnlinkWorkstream}
               onStartWorkstream={onStartWorkstream}

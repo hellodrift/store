@@ -80,9 +80,9 @@ export const slackIntegration = defineIntegration<WebClient>({
       flow: {
         grantType: 'web_redirect',
         webAuthPath: '/api/integrations/slack/auth',
-        scopes: ['channels:history', 'channels:read', 'chat:write', 'groups:history',
-                 'groups:read', 'im:history', 'im:read', 'users:read',
-                 'reactions:write', 'search:read'],
+        scopes: ['channels:history', 'channels:read', 'chat:write',
+                 'groups:history', 'groups:read', 'im:history', 'im:read',
+                 'users:read', 'reactions:write', 'search:read'],
         clientId: process.env.SLACK_OAUTH_CLIENT_ID ?? '',
         clientSecret: process.env.SLACK_OAUTH_CLIENT_SECRET,
         refreshUrl: 'https://slack.com/api/oauth.v2.access',

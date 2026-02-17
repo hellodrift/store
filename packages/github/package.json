@@ -1,0 +1,11 @@
+{
+  "name": "@drift/plugin-github",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Official Drift plugin: GitHub PR workflow and CI/CD monitoring",
+  "dependencies": {
+    "@drift/entity-sdk": "*",
+    "@octokit/rest": "^21.1.1",
+    "zod": "^3.22.0"
+  }
+}

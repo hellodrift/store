@@ -1,0 +1,30 @@
+{
+  "name": "github",
+  "displayName": "GitHub",
+  "description": "GitHub integration with PR workflow and CI/CD monitoring.",
+  "version": "0.1.0",
+  "integrations": ["github"],
+  "graphql": {
+    "schema": "schema.graphql",
+    "resolvers": "resolvers.ts"
+  },
+  "canvases": {
+    "nav-sidebar": {
+      "component": "components/NavSection.tsx",
+      "label": "GitHub",
+      "icon": "github",
+      "priority": 45
+    },
+    "drawer": {
+      "component": "components/SettingsDrawer.tsx"
+    },
+    "entity-drawer": [
+      { "component": "components/PRDrawer.tsx", "entityType": "github_pr" },
+      { "component": "components/WorkflowRunDrawer.tsx", "entityType": "github_workflow_run" }
+    ],
+    "entity-widget": [
+      { "component": "components/PRWidget.tsx", "entityType": "github_pr" },
+      { "component": "components/WorkflowRunWidget.tsx", "entityType": "github_workflow_run" }
+    ]
+  }
+}

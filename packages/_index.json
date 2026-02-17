@@ -1,5 +1,131 @@
 [
   {
+    "id": "github",
+    "displayName": "GitHub",
+    "description": "GitHub integration with PR workflow and CI/CD monitoring.",
+    "author": {
+      "name": "Drift Team"
+    },
+    "license": "MIT",
+    "repository": "hellodrift/store",
+    "path": "packages/github",
+    "latest": "0.1.0",
+    "versions": {
+      "0.1.0": {
+        "ref": "main",
+        "driftCompat": ">=0.8.0",
+        "publishedAt": "2026-02-17T20:11:14.370Z"
+      }
+    },
+    "keywords": [],
+    "icon": "github",
+    "provides": {
+      "integrations": [
+        "github"
+      ],
+      "canvases": [
+        "nav-sidebar",
+        "drawer",
+        "entity-drawer",
+        "entity-widget"
+      ],
+      "entities": [
+        "github_pr",
+        "github_workflow_run"
+      ],
+      "operations": [
+        {
+          "id": "list_repos",
+          "description": "List repositories for the authenticated user"
+        },
+        {
+          "id": "list_prs",
+          "description": "List pull requests for a repository"
+        },
+        {
+          "id": "get_pr",
+          "description": "Get detailed information about a specific pull request"
+        },
+        {
+          "id": "get_pr_diff",
+          "description": "Get the diff for a pull request"
+        },
+        {
+          "id": "get_pr_files",
+          "description": "List files changed in a pull request"
+        },
+        {
+          "id": "list_pr_reviews",
+          "description": "List reviews on a pull request"
+        },
+        {
+          "id": "list_pr_comments",
+          "description": "List comments on a pull request (issue comments)"
+        },
+        {
+          "id": "get_pr_checks",
+          "description": "Get CI check runs for a git ref (branch or SHA)"
+        },
+        {
+          "id": "list_workflow_runs",
+          "description": "List recent workflow runs for a repository"
+        },
+        {
+          "id": "get_workflow_run",
+          "description": "Get details of a specific workflow run"
+        },
+        {
+          "id": "get_workflow_run_logs",
+          "description": "Get download URL for workflow run logs"
+        },
+        {
+          "id": "list_my_prs",
+          "description": "List pull requests related to the authenticated user"
+        },
+        {
+          "id": "search_prs",
+          "description": "Search pull requests using GitHub search syntax"
+        },
+        {
+          "id": "create_pr",
+          "description": "Create a new pull request",
+          "mutation": true
+        },
+        {
+          "id": "merge_pr",
+          "description": "Merge a pull request",
+          "mutation": true
+        },
+        {
+          "id": "update_pr",
+          "description": "Update a pull request title, body, state, or base branch",
+          "mutation": true
+        },
+        {
+          "id": "request_review",
+          "description": "Request review on a pull request",
+          "mutation": true
+        },
+        {
+          "id": "submit_review",
+          "description": "Submit a review on a pull request (approve, request changes, or comment)",
+          "mutation": true
+        },
+        {
+          "id": "add_pr_comment",
+          "description": "Add a comment to a pull request",
+          "mutation": true
+        },
+        {
+          "id": "rerun_workflow",
+          "description": "Re-run a workflow run",
+          "mutation": true
+        }
+      ]
+    },
+    "verified": true
+  },
+  {
     "id": "linear-example",
     "displayName": "Linear",
     "description": "Linear issue tracking with GraphQL integration.",
@@ -14,7 +140,7 @@
       "0.3.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-16T21:32:37.495Z"
+        "publishedAt": "2026-02-17T20:11:14.372Z"
       }
     },
     "keywords": [],
@@ -122,7 +248,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-16T21:32:37.496Z"
+        "publishedAt": "2026-02-17T20:11:14.372Z"
       }
     },
     "keywords": [],
@@ -154,7 +280,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-16T21:32:37.496Z"
+        "publishedAt": "2026-02-17T20:11:14.372Z"
       }
     },
     "keywords": [],
@@ -220,43 +346,6 @@
           "description": "Mark a conversation as read up to a given timestamp",
           "mutation": true
         }
-      ]
-    },
-    "verified": true
-  },
-  {
-    "id": "issue-roulette",
-    "displayName": "Issue Roulette",
-    "description": "Feeling indecisive? Spin the wheel and let fate pick your next Linear issue.",
-    "author": {
-      "name": "Drift Team"
-    },
-    "license": "MIT",
-    "repository": "hellodrift/store",
-    "path": "packages/issue-roulette",
-    "latest": "0.1.0",
-    "versions": {
-      "0.1.0": {
-        "ref": "main",
-        "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-16T21:32:37.497Z"
-      }
-    },
-    "keywords": [
-      "linear",
-      "roulette",
-      "random",
-      "fun",
-      "productivity"
-    ],
-    "icon": "dices",
-    "provides": {
-      "integrations": [
-        "linear"
-      ],
-      "canvases": [
-        "nav-sidebar",
-        "drawer"
       ]
     },
     "verified": true

@@ -1,0 +1,130 @@
+type GithubPR {
+  id: ID!
+  type: String!
+  uri: String!
+  title: String!
+  number: Int!
+  state: String!
+  draft: Boolean
+  owner: String!
+  repo: String!
+  author: String
+  authorAvatar: String
+  headBranch: String
+  baseBranch: String
+  body: String
+  additions: Int
+  deletions: Int
+  changedFiles: Int
+  reviewState: String
+  checksStatus: String
+  labels: [GithubLabel!]
+  reviewers: [String!]
+  mergeable: Boolean
+  url: String
+  createdAt: String
+  updatedAt: String
+  linkedContext: String
+}
+
+type GithubLabel {
+  name: String!
+  color: String!
+}
+
+type GithubPRReview {
+  id: ID!
+  user: String
+  state: String!
+  body: String
+  submittedAt: String
+  url: String
+}
+
+type GithubPRComment {
+  id: ID!
+  user: String
+  userAvatar: String
+  body: String
+  createdAt: String
+  updatedAt: String
+  url: String
+}
+
+type GithubPRFile {
+  filename: String!
+  status: String!
+  additions: Int!
+  deletions: Int!
+  changes: Int!
+}
+
+type GithubCheckRun {
+  id: ID!
+  name: String!
+  status: String!
+  conclusion: String
+  startedAt: String
+  completedAt: String
+  url: String
+}
+
+type GithubWorkflowRun {
+  id: ID!
+  type: String!
+  uri: String!
+  title: String!
+  owner: String!
+  repo: String!
+  runId: Int!
+  workflowName: String
+  status: String
+  conclusion: String
+  branch: String
+  event: String
+  headSha: String
+  actor: String
+  actorAvatar: String
+  runNumber: Int
+  url: String
+  createdAt: String
+  updatedAt: String
+}
+
+type GithubWorkflowJob {
+  id: ID!
+  name: String!
+  status: String!
+  conclusion: String
+  startedAt: String
+  completedAt: String
+  steps: [GithubWorkflowStep!]
+}
+
+type GithubWorkflowStep {
+  name: String!
+  status: String!
+  conclusion: String
+  number: Int!
+}
+
+extend type Query {
+  githubPR(owner: String!, repo: String!, number: Int!): GithubPR
+  githubPRs(owner: String!, repo: String!, state: String, limit: Int): [GithubPR!]!
+  githubMyPRs(filter: String, state: String, limit: Int): [GithubPR!]!
+  githubPRReviews(owner: String!, repo: String!, number: Int!): [GithubPRReview!]!
+  githubPRComments(owner: String!, repo: String!, number: Int!): [GithubPRComment!]!
+  githubPRFiles(owner: String!, repo: String!, number: Int!): [GithubPRFile!]!
+  githubCheckRuns(owner: String!, repo: String!, ref: String!): [GithubCheckRun!]!
+  githubWorkflowRuns(owner: String!, repo: String!, branch: String, limit: Int): [GithubWorkflowRun!]!
+  githubWorkflowRun(owner: String!, repo: String!, runId: Int!): GithubWorkflowRun
+  githubWorkflowJobs(owner: String!, repo: String!, runId: Int!): [GithubWorkflowJob!]!
+}
+
+extend type Mutation {
+  githubMergePR(owner: String!, repo: String!, number: Int!, mergeMethod: String): EntityActionResult!
+  githubSubmitReview(owner: String!, repo: String!, number: Int!, event: String!, body: String): EntityActionResult!
+  githubAddPRComment(owner: String!, repo: String!, number: Int!, body: String!): EntityActionResult!
+  githubUpdatePR(owner: String!, repo: String!, number: Int!, title: String, body: String, state: String): EntityActionResult!
+  githubRerunWorkflow(owner: String!, repo: String!, runId: Int!): EntityActionResult!
+}
