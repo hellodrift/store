@@ -108,10 +108,22 @@ type GithubWorkflowStep {
   number: Int!
 }
 
+type GithubRepo {
+  owner: String!
+  name: String!
+  fullName: String!
+  description: String
+  language: String
+  private: Boolean!
+  defaultBranch: String
+  url: String
+}
+
 extend type Query {
+  githubRepos(limit: Int): [GithubRepo!]!
   githubPR(owner: String!, repo: String!, number: Int!): GithubPR
   githubPRs(owner: String!, repo: String!, state: String, limit: Int): [GithubPR!]!
-  githubMyPRs(filter: String, state: String, limit: Int): [GithubPR!]!
+  githubMyPRs(filter: String, state: String, repos: [String!], limit: Int): [GithubPR!]!
   githubPRReviews(owner: String!, repo: String!, number: Int!): [GithubPRReview!]!
   githubPRComments(owner: String!, repo: String!, number: Int!): [GithubPRComment!]!
   githubPRFiles(owner: String!, repo: String!, number: Int!): [GithubPRFile!]!

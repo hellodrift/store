@@ -1,0 +1,10 @@
+{
+  "name": "@drift/plugin-gmail",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Official Drift plugin: Gmail email integration with thread support",
+  "dependencies": {
+    "@drift/entity-sdk": "*",
+    "zod": "^3.22.0"
+  }
+}

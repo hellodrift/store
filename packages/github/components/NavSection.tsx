@@ -1,10 +1,10 @@
-import { NavSection, NavItem, NavSettingsButton, NavHeaderActions } from '@drift/ui/components';
-import { useEntityQuery, gql, logger, useEntityDrawer, useEntitySelection, buildEntityURI } from '@drift/plugin-api';
+import { NavSection, NavItem, NavSettingsButton, NavHeaderActions, GitHubIcon } from '@drift/ui/components';
+import { useEntityQuery, gql, logger, useEntityDrawer, useEntitySelection } from '@drift/plugin-api';
 import { useGithubSettings } from './useGithubSettings';
 
 const GET_MY_PRS = gql`
-  query GetMyPRs($filter: String, $state: String, $limit: Int) {
-    githubMyPRs(filter: $filter, state: $state, limit: $limit) {
+  query GetMyPRs($filter: String, $state: String, $repos: [String!], $limit: Int) {
+    githubMyPRs(filter: $filter, state: $state, repos: $repos, limit: $limit) {
       id
       title
       number
@@ -155,6 +155,7 @@ export default function GithubNav() {
     variables: {
       filter: settings.prFilter,
       state: settings.prState,
+      repos: settings.repos.length > 0 ? settings.repos : undefined,
       limit: settings.limit,
     },
   });
@@ -189,18 +190,18 @@ export default function GithubNav() {
 
   const handlePRSelect = (pr: GithubPR) => {
     logger.info('GitHub PR selected', { owner: pr.owner, repo: pr.repo, number: pr.number });
-    openEntityDrawer(buildEntityURI('github_pr', `${pr.owner}/${pr.repo}/${pr.number}`, pr.title));
+    openEntityDrawer(`@drift//github_pr/${pr.owner}/${pr.repo}/${pr.number}`);
   };
 
   const handleWorkflowSelect = (run: WorkflowRun) => {
     logger.info('GitHub workflow run selected', { owner: run.owner, repo: run.repo, runId: run.runId });
-    openEntityDrawer(buildEntityURI('github_workflow_run', `${run.owner}/${run.repo}/${run.runId}`, run.title));
+    openEntityDrawer(`@drift//github_workflow_run/${run.owner}/${run.repo}/${run.runId}`);
   };
 
   const prSection = {
     id: 'github-prs',
     label: `Pull Requests${prs.length ? ` (${prs.length})` : ''}`,
-    icon: <span style={{ fontSize: '12px' }}>{'🔀'}</span>,
+    icon: <GitHubIcon size={12} />,
     items: [],
     isLoading: prLoading && !prData,
     emptyState: prError && !prData ? prError.message : 'No PRs found',
@@ -220,7 +221,7 @@ export default function GithubNav() {
   const ciSection = {
     id: 'github-ci',
     label: `CI/CD${workflowRuns.length ? ` (${workflowRuns.length})` : ''}`,
-    icon: <span style={{ fontSize: '12px' }}>{'⚙️'}</span>,
+    icon: <GitHubIcon size={12} />,
     items: [],
     isLoading: ciLoading && !ciData,
     emptyState: !ciOwner ? 'Configure repos in settings' : (ciError && !ciData ? ciError.message : 'No workflow runs'),

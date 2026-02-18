@@ -1,0 +1,30 @@
+{
+  "name": "gmail-example",
+  "displayName": "Gmail",
+  "description": "Gmail email integration with thread support.",
+  "version": "0.1.0",
+  "integrations": ["gmail"],
+  "graphql": {
+    "schema": "schema.graphql",
+    "resolvers": "resolvers.ts"
+  },
+  "canvases": {
+    "nav-sidebar": {
+      "component": "components/NavSection.tsx",
+      "label": "Gmail",
+      "icon": "mail",
+      "priority": 40
+    },
+    "entity-drawer": {
+      "component": "components/ThreadDrawer.tsx",
+      "entityType": "gmail_message"
+    },
+    "entity-widget": {
+      "component": "components/GmailWidget.tsx",
+      "entityType": "gmail_message"
+    },
+    "drawer": {
+      "component": "components/SettingsDrawer.tsx"
+    }
+  }
+}

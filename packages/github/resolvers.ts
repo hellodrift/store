@@ -142,6 +142,36 @@ export default {
   },
 
   Query: {
+    githubRepos: async (
+      _: unknown,
+      { limit }: { limit?: number },
+      ctx: any,
+    ) => {
+      const client = getClient(ctx);
+      if (!client) return [];
+
+      try {
+        const { data } = await client.repos.listForAuthenticatedUser({
+          type: 'owner',
+          sort: 'updated',
+          per_page: limit ?? 100,
+        });
+        return data.map((r: any) => ({
+          owner: r.owner.login,
+          name: r.name,
+          fullName: r.full_name,
+          description: r.description,
+          language: r.language,
+          private: r.private,
+          defaultBranch: r.default_branch,
+          url: r.html_url,
+        }));
+      } catch (err: any) {
+        ctx.logger.error('Failed to list repos', { error: err?.message ?? String(err) });
+        return [];
+      }
+    },
+
     githubPR: async (
       _: unknown,
       { owner, repo, number }: { owner: string; repo: string; number: number },
@@ -196,7 +226,7 @@ export default {
 
     githubMyPRs: async (
       _: unknown,
-      { filter, state, limit }: { filter?: string; state?: string; limit?: number },
+      { filter, state, repos, limit }: { filter?: string; state?: string; repos?: string[]; limit?: number },
       ctx: any,
     ) => {
       const client = getClient(ctx);
@@ -209,7 +239,12 @@ export default {
       const prState = state ?? 'open';
       const maxResults = limit ?? 20;
 
-      ctx.logger.info('Searching my github PRs via GraphQL', { filter: filterType, state: prState, limit: maxResults });
+      ctx.logger.info('Searching my github PRs via GraphQL', { filter: filterType, state: prState, repos, limit: maxResults });
+
+      // If repos are specified but empty array, no repos selected — return nothing
+      if (repos && repos.length === 0) {
+        return [];
+      }
 
       try {
         const { data: user } = await client.users.getAuthenticated();
@@ -229,6 +264,11 @@ export default {
           case 'assigned':
             query += ` assignee:${username}`;
             break;
+        }
+
+        // Scope to selected repos
+        if (repos && repos.length > 0) {
+          query += ' ' + repos.map((r) => `repo:${r}`).join(' ');
         }
 
         const { data } = await client.search.issuesAndPullRequests({

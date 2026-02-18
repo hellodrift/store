@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { DrawerHeaderTitle, DrawerBody, ContentSection, Button, Separator, Badge } from '@drift/ui';
+import { DrawerHeaderTitle, DrawerBody, ContentSection, Button, Separator, Badge, Markdown } from '@drift/ui';
 import { useEntityQuery, useEntityMutation, gql, logger } from '@drift/plugin-api';
+import { GitHubIcon } from '@drift/ui/components';
 
 // ── GraphQL ──────────────────────────────────────────────────────────────────
 
@@ -449,7 +450,7 @@ export default function PRDrawer({ entityId, pathSegments, label, drawer }: Enti
                     </span>
                   </div>
                   {r.body && (
-                    <div style={{ color: 'var(--text-secondary)', marginTop: '2px' }}>{r.body}</div>
+                    <div style={{ marginTop: '2px' }}><Markdown content={r.body} size="sm" /></div>
                   )}
                 </div>
               ))}
@@ -463,8 +464,8 @@ export default function PRDrawer({ entityId, pathSegments, label, drawer }: Enti
         <>
           <Separator />
           <ContentSection title="Description">
-            <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' }}>
-              {pr.body}
+            <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              <Markdown content={pr.body} size="sm" />
             </div>
           </ContentSection>
         </>
@@ -479,7 +480,7 @@ export default function PRDrawer({ entityId, pathSegments, label, drawer }: Enti
               {comments.map((c) => (
                 <div key={c.id} style={{ fontSize: '12px' }}>
                   <div style={{ fontWeight: 600, marginBottom: '2px' }}>{c.user}</div>
-                  <div style={{ color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{c.body}</div>
+                  {c.body && <Markdown content={c.body} size="sm" />}
                 </div>
               ))}
             </div>
@@ -574,25 +575,48 @@ export default function PRDrawer({ entityId, pathSegments, label, drawer }: Enti
         </>
       )}
 
-      {/* External Link */}
-      {pr.url && (
-        <>
-          <Separator />
-          <ContentSection>
-            <a
-              href={pr.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: '12px', color: '#238636', textDecoration: 'none' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              Open in GitHub →
-            </a>
-          </ContentSection>
-        </>
-      )}
-
       </DrawerBody>
+
+      {/* Sticky footer */}
+      {pr.url && (
+        <div
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            padding: 8,
+            borderTop: '1px solid var(--border-muted)',
+            background: 'var(--surface-page)',
+          }}
+        >
+          <a
+            href={pr.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--text-accent, #238636)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+            }}
+          >
+            <GitHubIcon size={12} />
+            Open in GitHub
+          </a>
+        </div>
+      )}
     </div>
   );
 }

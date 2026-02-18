@@ -4,6 +4,7 @@
   "description": "Essential packages to get the most out of Drift",
   "packages": [
     "github",
+    "gmail-example",
     "linear-example",
     "mobile-notification",
     "slack"

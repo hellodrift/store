@@ -11,11 +11,34 @@ import {
   Separator,
   Label,
   Checkbox,
+  Combobox,
   Input,
 } from '@drift/ui';
-import { logger } from '@drift/plugin-api';
+import { useEntityQuery, gql, logger } from '@drift/plugin-api';
 import { useGithubSettings, DEFAULT_SETTINGS } from './useGithubSettings';
 import type { GithubSettings } from './useGithubSettings';
+
+const GET_REPOS = gql`
+  query GetGithubRepos($limit: Int) {
+    githubRepos(limit: $limit) {
+      owner
+      name
+      fullName
+      description
+      language
+      private
+    }
+  }
+`;
+
+interface GithubRepo {
+  owner: string;
+  name: string;
+  fullName: string;
+  description?: string;
+  language?: string;
+  private: boolean;
+}
 
 const PR_FILTER_OPTIONS: { value: GithubSettings['prFilter']; label: string }[] = [
   { value: 'review_requested', label: 'Review requested' },
@@ -45,11 +68,13 @@ interface SettingsDrawerProps {
 
 export default function SettingsDrawer({ drawer }: SettingsDrawerProps) {
   const [settings, updateSettings] = useGithubSettings();
+  const { data: reposData } = useEntityQuery(GET_REPOS, { variables: { limit: 100 } });
+  const repos: GithubRepo[] = reposData?.githubRepos ?? [];
 
-  const handleRepoChange = (value: string) => {
-    const repos = value.split(',').map((r) => r.trim()).filter(Boolean);
-    updateSettings({ repos });
-  };
+  const repoOptions = repos.map((r) => ({
+    value: r.fullName,
+    label: r.fullName,
+  }));
 
   const handleReset = () => {
     updateSettings(DEFAULT_SETTINGS);
@@ -64,13 +89,17 @@ export default function SettingsDrawer({ drawer }: SettingsDrawerProps) {
 
       {/* Repos Filter */}
       <ContentSection title="Repositories">
-        <Input
-          value={settings.repos.join(', ')}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleRepoChange(e.target.value)}
-          placeholder="owner/repo, owner/repo2"
+        <Combobox
+          multiple
+          options={repoOptions}
+          value={settings.repos}
+          onValueChange={(repos) => updateSettings({ repos })}
+          placeholder="Select repositories..."
+          searchPlaceholder="Search repos..."
+          emptyMessage="No repos found"
         />
         <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-          Comma-separated owner/repo pairs for CI/CD section. Leave empty to skip CI.
+          Select repos for the CI/CD section. Leave empty to skip CI.
         </p>
       </ContentSection>
 

@@ -1,0 +1,86 @@
+type GmailMessage {
+  id: ID!
+  type: String!
+  uri: String!
+  title: String!
+  threadId: String!
+  snippet: String
+  from: String
+  to: String
+  cc: String
+  date: String
+  messageId: String
+  labelIds: [String!]
+  labelNames: String
+  isUnread: Boolean
+  isStarred: Boolean
+  isInbox: Boolean
+  isDraft: Boolean
+  bodyText: String
+  bodyHtml: String
+  hasAttachments: Boolean
+  url: String
+  linkedContext: String
+}
+
+type GmailThreadMessage {
+  id: ID!
+  from: String
+  to: String
+  date: String
+  snippet: String
+  bodyText: String
+  bodyHtml: String
+  isUnread: Boolean
+}
+
+type GmailThread {
+  id: ID!
+  subject: String
+  messages: [GmailThreadMessage!]!
+  messageCount: Int!
+}
+
+type GmailLabel {
+  id: ID!
+  name: String!
+  type: String
+  messagesTotal: Int
+  messagesUnread: Int
+}
+
+type GmailProfile {
+  emailAddress: String!
+  messagesTotal: Int
+  threadsTotal: Int
+}
+
+extend type Query {
+  gmailMessage(id: ID!): GmailMessage
+  gmailMessages(query: String, labelId: String, maxResults: Int): [GmailMessage!]!
+  gmailThread(id: ID!): GmailThread
+  gmailLabels: [GmailLabel!]!
+  gmailProfile: GmailProfile
+}
+
+input SendGmailMessageInput {
+  to: String!
+  subject: String!
+  body: String!
+  cc: String
+  bcc: String
+}
+
+extend type Mutation {
+  sendGmailMessage(input: SendGmailMessageInput!): EntityActionResult!
+  replyGmailMessage(id: ID!, body: String!, replyAll: Boolean): EntityActionResult!
+  forwardGmailMessage(id: ID!, to: String!, body: String): EntityActionResult!
+  archiveGmailMessage(id: ID!): EntityActionResult!
+  unarchiveGmailMessage(id: ID!): EntityActionResult!
+  trashGmailMessage(id: ID!): EntityActionResult!
+  starGmailMessage(id: ID!): EntityActionResult!
+  unstarGmailMessage(id: ID!): EntityActionResult!
+  markGmailMessageRead(id: ID!): EntityActionResult!
+  markGmailMessageUnread(id: ID!): EntityActionResult!
+  modifyGmailLabels(id: ID!, addLabelIds: [String!], removeLabelIds: [String!]): EntityActionResult!
+}

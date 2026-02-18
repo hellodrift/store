@@ -1,7 +1,7 @@
 import { DrawerHeaderTitle } from '@drift/ui';
 import { useEntityQuery, useEntityMutation, gql, logger, useWorkstreamLinker } from '@drift/plugin-api';
 import TicketDrawerContent from './TicketDrawerContent';
-import type { LinearIssue } from './TicketDrawerContent';
+import type { LinearIssue, LinearSubIssue } from './TicketDrawerContent';
 import { useOptimistic } from './useOptimistic';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -276,6 +276,11 @@ export default function TicketDrawer({ entityId, label, drawer }: EntityDrawerPr
   const optimistic = useOptimistic<LinearIssue>(serverIssue);
   const issue = optimistic.data;
 
+  interface SubIssuesState { subIssues: LinearSubIssue[]; }
+  const serverSubIssues: LinearSubIssue[] = subIssuesData?.linearSubIssues ?? [];
+  const optimisticSubIssues = useOptimistic<SubIssuesState>({ subIssues: serverSubIssues });
+  const subIssues = optimisticSubIssues.data?.subIssues ?? serverSubIssues;
+
   // ── Derived-field resolver ──────────────────────────────────────────────
   // Maps a single API field change to ALL display fields that should update
   // immediately. Without this, changing stateId would leave stateName stale
@@ -387,24 +392,32 @@ export default function TicketDrawer({ entityId, label, drawer }: EntityDrawerPr
     });
   };
 
-  const handleAddSubIssue = async (childId: string) => {
-    try {
-      await updateIssue({ variables: { id: childId, input: { parentId: entityId } } });
-      refetchSubIssues();
-      refetchTeamIssues();
-    } catch (err: any) {
-      logger.error('Failed to add sub-issue', { error: err?.message });
-    }
+  const handleAddSubIssue = (childId: string) => {
+    const teamIssue = teamIssuesData?.linearIssues?.find((i: any) => i.id === childId);
+    const optimisticEntry: LinearSubIssue = {
+      id: childId,
+      title: teamIssue?.title ?? childId,
+      identifier: teamIssue?.identifier,
+    };
+    optimisticSubIssues.apply(
+      { subIssues: [...subIssues, optimisticEntry] },
+      async () => {
+        await updateIssue({ variables: { id: childId, input: { parentId: entityId } } });
+        await refetchSubIssues();
+        refetchTeamIssues();
+      },
+    );
   };
 
-  const handleRemoveSubIssue = async (childId: string) => {
-    try {
-      await updateIssue({ variables: { id: childId, input: { parentId: null } } });
-      refetchSubIssues();
-      refetchTeamIssues();
-    } catch (err: any) {
-      logger.error('Failed to remove sub-issue', { error: err?.message });
-    }
+  const handleRemoveSubIssue = (childId: string) => {
+    optimisticSubIssues.apply(
+      { subIssues: subIssues.filter((s) => s.id !== childId) },
+      async () => {
+        await updateIssue({ variables: { id: childId, input: { parentId: null } } });
+        await refetchSubIssues();
+        refetchTeamIssues();
+      },
+    );
   };
 
   const handleOpenEntity = (uri: string) => {
@@ -455,7 +468,7 @@ export default function TicketDrawer({ entityId, label, drawer }: EntityDrawerPr
       cycles={cyclesData?.linearCycles}
       comments={commentsData?.linearComments}
       relations={relationsData?.linearIssueRelations}
-      subIssues={subIssuesData?.linearSubIssues}
+      subIssues={subIssues}
       teamIssues={teamIssuesData?.linearIssues}
       onAddSubIssue={handleAddSubIssue}
       onRemoveSubIssue={handleRemoveSubIssue}

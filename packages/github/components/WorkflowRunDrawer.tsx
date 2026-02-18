@@ -1,5 +1,6 @@
 import { DrawerHeaderTitle, DrawerBody, ContentSection, Button, Separator } from '@drift/ui';
 import { useEntityQuery, useEntityMutation, gql, logger } from '@drift/plugin-api';
+import { GitHubIcon } from '@drift/ui/components';
 
 // ── GraphQL ──────────────────────────────────────────────────────────────────
 
@@ -315,25 +316,48 @@ export default function WorkflowRunDrawer({ entityId, pathSegments, label, drawe
         </Button>
       </ContentSection>
 
-      {/* External Link */}
-      {run.url && (
-        <>
-          <Separator />
-          <ContentSection>
-            <a
-              href={run.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ fontSize: '12px', color: '#1f6feb', textDecoration: 'none' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              Open in GitHub →
-            </a>
-          </ContentSection>
-        </>
-      )}
-
       </DrawerBody>
+
+      {/* Sticky footer */}
+      {run.url && (
+        <div
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 12,
+            padding: 8,
+            borderTop: '1px solid var(--border-muted)',
+            background: 'var(--surface-page)',
+          }}
+        >
+          <a
+            href={run.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              transition: 'color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--text-accent, #238636)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--text-muted)';
+            }}
+          >
+            <GitHubIcon size={12} />
+            Open in GitHub
+          </a>
+        </div>
+      )}
     </div>
   );
 }

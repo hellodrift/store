@@ -1,0 +1,109 @@
+{
+  "id": "gmail-example",
+  "displayName": "Gmail",
+  "description": "Gmail email integration with thread support.",
+  "author": {
+    "name": "Drift Team"
+  },
+  "license": "MIT",
+  "repository": "hellodrift/store",
+  "path": "packages/gmail-example",
+  "latest": "0.1.0",
+  "versions": {
+    "0.1.0": {
+      "ref": "main",
+      "driftCompat": ">=0.8.0",
+      "publishedAt": "2026-02-18T16:00:05.351Z"
+    }
+  },
+  "keywords": [],
+  "icon": "mail",
+  "provides": {
+    "integrations": [
+      "gmail"
+    ],
+    "canvases": [
+      "nav-sidebar",
+      "entity-drawer",
+      "entity-widget",
+      "drawer"
+    ],
+    "entities": [
+      "gmail_message"
+    ],
+    "operations": [
+      {
+        "id": "list_labels",
+        "description": "List all Gmail labels with message counts"
+      },
+      {
+        "id": "get_profile",
+        "description": "Get Gmail user profile (email address, message/thread counts)"
+      },
+      {
+        "id": "search_messages",
+        "description": "Search Gmail messages with Gmail search syntax"
+      },
+      {
+        "id": "send_message",
+        "description": "Compose and send a new email",
+        "mutation": true
+      },
+      {
+        "id": "reply_to_message",
+        "description": "Reply to a Gmail message",
+        "mutation": true
+      },
+      {
+        "id": "forward_message",
+        "description": "Forward a Gmail message to a recipient",
+        "mutation": true
+      },
+      {
+        "id": "archive_message",
+        "description": "Archive a Gmail message (remove from INBOX)",
+        "mutation": true
+      },
+      {
+        "id": "unarchive_message",
+        "description": "Unarchive a Gmail message (add back to INBOX)",
+        "mutation": true
+      },
+      {
+        "id": "star_message",
+        "description": "Star a Gmail message",
+        "mutation": true
+      },
+      {
+        "id": "unstar_message",
+        "description": "Unstar a Gmail message",
+        "mutation": true
+      },
+      {
+        "id": "mark_read",
+        "description": "Mark a Gmail message as read",
+        "mutation": true
+      },
+      {
+        "id": "mark_unread",
+        "description": "Mark a Gmail message as unread",
+        "mutation": true
+      },
+      {
+        "id": "trash_message",
+        "description": "Move a Gmail message to trash",
+        "mutation": true
+      },
+      {
+        "id": "modify_labels",
+        "description": "Add or remove labels on a Gmail message",
+        "mutation": true
+      },
+      {
+        "id": "compose",
+        "description": "Compose and send a new email"
+      }
+    ]
+  },
+  "verified": true
+}
