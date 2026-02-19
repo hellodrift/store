@@ -1,0 +1,37 @@
+{
+  "id": "youtube",
+  "displayName": "YouTube",
+  "description": "Search and play YouTube videos inline in Drift. Ask Claude to find and play any video.",
+  "author": {
+    "name": "Drift Team"
+  },
+  "license": "MIT",
+  "repository": "hellodrift/store",
+  "path": "packages/youtube",
+  "latest": "0.1.0",
+  "versions": {
+    "0.1.0": {
+      "ref": "main",
+      "driftCompat": ">=0.8.0",
+      "publishedAt": "2026-02-19T18:01:21.545Z"
+    }
+  },
+  "keywords": [],
+  "provides": {
+    "canvases": [
+      "entity-widget",
+      "floating-widget",
+      "entity-drawer"
+    ],
+    "entities": [
+      "youtube_video"
+    ],
+    "operations": [
+      {
+        "id": "search_videos",
+        "description": "Search YouTube for videos matching a query"
+      }
+    ]
+  },
+  "verified": true
+}

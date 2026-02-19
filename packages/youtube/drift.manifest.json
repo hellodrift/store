@@ -1,0 +1,26 @@
+{
+  "$schema": "https://registry.drift.dev/manifest/v1.json",
+  "name": "youtube",
+  "displayName": "YouTube",
+  "description": "Search and play YouTube videos inline in Drift. Ask Claude to find and play any video.",
+  "version": "0.1.0",
+  "graphql": {
+    "schema": "schema.graphql",
+    "resolvers": "resolvers.ts"
+  },
+  "canvases": {
+    "entity-widget": {
+      "component": "components/VideoWidget.tsx",
+      "entityType": "youtube_video"
+    },
+    "floating-widget": {
+      "component": "components/VideoFloatingWidget.tsx",
+      "entityType": "youtube_video",
+      "autoDetach": true
+    },
+    "entity-drawer": {
+      "component": "components/VideoDrawer.tsx",
+      "entityType": "youtube_video"
+    }
+  }
+}

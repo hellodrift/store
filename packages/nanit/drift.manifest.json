@@ -1,0 +1,21 @@
+{
+  "$schema": "https://registry.drift.dev/manifest/v1.json",
+  "name": "nanit",
+  "version": "0.1.0",
+  "displayName": "Nanit",
+  "description": "Live baby camera stream from Nanit",
+
+  "canvases": {
+    "nav-sidebar": {
+      "component": "components/NavSection.tsx",
+      "label": "Nanit",
+      "icon": "baby",
+      "priority": 80
+    },
+    "drawer": {
+      "component": "components/Drawer.tsx",
+      "label": "Nanit Camera",
+      "icon": "baby"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+type YoutubeVideo {
+  id: ID!
+  videoId: String!
+  title: String!
+  channelTitle: String!
+  thumbnailUrl: String!
+  description: String
+  publishedAt: String
+  embedUrl: String!
+  watchUrl: String!
+  linkedContext: String
+}
+
+type Query {
+  youtubeVideo(videoId: String!): YoutubeVideo
+}

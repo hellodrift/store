@@ -1,0 +1,28 @@
+{
+  "id": "nanit",
+  "displayName": "Nanit",
+  "description": "Live baby camera stream from Nanit",
+  "author": {
+    "name": "Drift Team"
+  },
+  "license": "MIT",
+  "repository": "hellodrift/store",
+  "path": "packages/nanit",
+  "latest": "0.1.0",
+  "versions": {
+    "0.1.0": {
+      "ref": "main",
+      "driftCompat": ">=0.8.0",
+      "publishedAt": "2026-02-19T18:01:21.545Z"
+    }
+  },
+  "keywords": [],
+  "icon": "baby",
+  "provides": {
+    "canvases": [
+      "nav-sidebar",
+      "drawer"
+    ]
+  },
+  "verified": true
+}
