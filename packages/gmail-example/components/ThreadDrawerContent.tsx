@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DrawerHeaderTitle,
   DrawerHeaderActions,
@@ -8,7 +8,6 @@ import {
   Button,
   Textarea,
   Separator,
-  Markdown,
   WorkstreamHeaderAction,
   WorkstreamSection,
   ConfirmDialog,
@@ -17,6 +16,7 @@ import {
   type ActiveWorkstream,
 } from '@drift/ui';
 import { logger, openExternal } from '@drift/plugin-api';
+import EmailBody from './EmailBody';
 
 // ────────────────────────────────────────────────────────────────────────────
 // Types
@@ -154,6 +154,39 @@ export default function ThreadDrawerContent({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
 
+  const threadMessages = thread?.messages ?? [];
+
+  // Log email content for debugging rendering issues
+  useEffect(() => {
+    logger.info('[Gmail Debug] Drawer opened for message', {
+      messageId: message.id,
+      subject: message.title,
+      hasBodyHtml: !!message.bodyHtml,
+      hasBodyText: !!message.bodyText,
+      bodyHtmlLength: message.bodyHtml?.length ?? 0,
+      bodyTextLength: message.bodyText?.length ?? 0,
+      bodyHtml: message.bodyHtml ?? null,
+      bodyText: message.bodyText ?? null,
+      snippet: message.snippet ?? null,
+    });
+
+    if (threadMessages.length > 0) {
+      threadMessages.forEach((tmsg, idx) => {
+        logger.info(`[Gmail Debug] Thread message ${idx + 1}/${threadMessages.length}`, {
+          messageId: tmsg.id,
+          from: tmsg.from,
+          hasBodyHtml: !!tmsg.bodyHtml,
+          hasBodyText: !!tmsg.bodyText,
+          bodyHtmlLength: tmsg.bodyHtml?.length ?? 0,
+          bodyTextLength: tmsg.bodyText?.length ?? 0,
+          bodyHtml: tmsg.bodyHtml ?? null,
+          bodyText: tmsg.bodyText ?? null,
+          snippet: tmsg.snippet ?? null,
+        });
+      });
+    }
+  }, [message.id, message.title, message.bodyHtml, message.bodyText, message.snippet, threadMessages]);
+
   const handleOpenInGmail = () => {
     if (message.url) {
       openExternal(message.url);
@@ -184,8 +217,6 @@ export default function ThreadDrawerContent({
       return next;
     });
   };
-
-  const threadMessages = thread?.messages ?? [];
 
   // Label badges
   const currentLabelIds = message.labelIds ?? [];
@@ -377,13 +408,11 @@ export default function ThreadDrawerContent({
                     {/* Expanded body */}
                     {isExpanded && (
                       <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border-muted)' }}>
-                        {tmsg.bodyText ? (
-                          <Markdown content={tmsg.bodyText} size="sm" />
-                        ) : (
-                          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                            {tmsg.snippet || '(No content)'}
-                          </div>
-                        )}
+                        <EmailBody
+                          bodyHtml={tmsg.bodyHtml}
+                          bodyText={tmsg.bodyText}
+                          snippet={tmsg.snippet}
+                        />
                       </div>
                     )}
 
@@ -398,13 +427,11 @@ export default function ThreadDrawerContent({
               })
             ) : (
               // Fall back to main message body
-              message.bodyText ? (
-                <Markdown content={message.bodyText} size="sm" />
-              ) : (
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                  {message.snippet || '(No content)'}
-                </div>
-              )
+              <EmailBody
+                bodyHtml={message.bodyHtml}
+                bodyText={message.bodyText}
+                snippet={message.snippet}
+              />
             )}
           </div>
         </ContentSection>

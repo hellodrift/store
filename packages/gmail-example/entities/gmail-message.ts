@@ -4,12 +4,188 @@
  * Uses the `gmail` integration for auth and the GmailClient.
  * Actions: compose, reply, forward, archive, unarchive,
  * star, unstar, mark_read, mark_unread, trash, modify_labels.
+ *
+ * NOTE: Types and helpers are inlined here because the ModuleEvaluator
+ * sandbox does not allow cross-file requires. Only `@drift/entity-sdk`
+ * and `zod` are available at runtime.
  */
 
 import { z } from 'zod';
 import { defineEntity } from '@drift/entity-sdk';
 import type { EntityResolverContext, EntityActionParams, EntityActionResult } from '@drift/entity-sdk';
-import { GmailClient, extractHeaders, extractBody, hasAttachments, buildRfc2822Message } from '../integrations/gmail';
+
+// ---------- Gmail API response types (inlined) ----------
+
+interface GmailApiHeader {
+  name: string;
+  value: string;
+}
+
+interface GmailApiBody {
+  data?: string;
+  size?: number;
+  attachmentId?: string;
+}
+
+interface GmailApiPart {
+  mimeType?: string;
+  filename?: string;
+  headers?: GmailApiHeader[];
+  body?: GmailApiBody;
+  parts?: GmailApiPart[];
+}
+
+interface GmailApiPayload {
+  mimeType?: string;
+  headers?: GmailApiHeader[];
+  body?: GmailApiBody;
+  parts?: GmailApiPart[];
+}
+
+interface GmailApiRawMessage {
+  id: string;
+  threadId: string;
+  labelIds?: string[];
+  snippet?: string;
+  internalDate?: string;
+  payload?: GmailApiPayload;
+}
+
+// ---------- GmailClient interface (matches class in integrations/gmail.ts) ----------
+// This is a local interface, NOT a runtime import. The actual class is injected
+// by the integration framework at runtime.
+
+interface GmailClient {
+  listMessages(params?: {
+    q?: string;
+    maxResults?: number;
+    labelIds?: string[];
+    pageToken?: string;
+  }): Promise<{ messages: Array<{ id: string; threadId: string }>; nextPageToken?: string; resultSizeEstimate?: number }>;
+  getMessage(id: string, format?: 'full' | 'metadata' | 'minimal'): Promise<GmailApiRawMessage>;
+  getThread(id: string): Promise<{ id: string; snippet?: string; messages: GmailApiRawMessage[] }>;
+  modifyMessage(id: string, addLabelIds?: string[], removeLabelIds?: string[]): Promise<GmailApiRawMessage>;
+  trashMessage(id: string): Promise<GmailApiRawMessage>;
+  untrashMessage(id: string): Promise<GmailApiRawMessage>;
+  sendMessage(raw: string, threadId?: string): Promise<{ id: string; threadId: string }>;
+  listLabels(): Promise<Array<{ id: string; name: string; type: string; messagesTotal?: number; messagesUnread?: number }>>;
+  getProfile(): Promise<{ emailAddress: string; messagesTotal: number; threadsTotal: number }>;
+}
+
+// ---------- Extended resolver context with integration client ----------
+
+interface GmailResolverContext extends EntityResolverContext {
+  integrations?: {
+    gmail?: {
+      client: GmailClient | null;
+    };
+  };
+}
+
+// ---------- Inlined MIME helpers ----------
+
+function extractHeaders(headers?: GmailApiHeader[]): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!headers) return result;
+  for (const h of headers) {
+    result[h.name.toLowerCase()] = h.value;
+  }
+  return result;
+}
+
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractBody(payload?: GmailApiPayload): { text: string; html?: string } {
+  if (!payload) return { text: '' };
+
+  if (payload.body?.data) {
+    const decoded = Buffer.from(payload.body.data, 'base64').toString('utf-8');
+    if (payload.mimeType === 'text/html') {
+      return { text: htmlToText(decoded), html: decoded };
+    }
+    return { text: decoded };
+  }
+
+  if (payload.parts) {
+    let text = '';
+    let html: string | undefined;
+
+    const walk = (parts: GmailApiPart[]) => {
+      for (const part of parts) {
+        if (part.mimeType === 'text/plain' && part.body?.data) {
+          text = Buffer.from(part.body.data, 'base64').toString('utf-8');
+        } else if (part.mimeType === 'text/html' && part.body?.data) {
+          html = Buffer.from(part.body.data, 'base64').toString('utf-8');
+        } else if (part.mimeType?.startsWith('multipart/') && part.parts) {
+          walk(part.parts);
+        }
+      }
+    };
+    walk(payload.parts);
+
+    if (!text && html) {
+      text = htmlToText(html);
+    }
+    return { text, html };
+  }
+
+  return { text: '' };
+}
+
+function checkHasAttachments(payload?: GmailApiPayload): boolean {
+  if (!payload?.parts) return false;
+  return payload.parts.some(
+    (part) => part.filename && part.filename.length > 0 && part.body?.attachmentId,
+  );
+}
+
+function buildRfc2822Message(params: {
+  to: string;
+  from?: string;
+  cc?: string;
+  bcc?: string;
+  subject: string;
+  body: string;
+  inReplyTo?: string;
+  references?: string;
+}): string {
+  const lines: string[] = [];
+  if (params.from) lines.push(`From: ${params.from}`);
+  lines.push(`To: ${params.to}`);
+  if (params.cc) lines.push(`Cc: ${params.cc}`);
+  if (params.bcc) lines.push(`Bcc: ${params.bcc}`);
+  lines.push(`Subject: ${params.subject}`);
+  if (params.inReplyTo) lines.push(`In-Reply-To: ${params.inReplyTo}`);
+  if (params.references) lines.push(`References: ${params.references}`);
+  else if (params.inReplyTo) lines.push(`References: ${params.inReplyTo}`);
+  lines.push('Content-Type: text/plain; charset=utf-8');
+  lines.push('');
+  lines.push(params.body);
+
+  const raw = lines.join('\r\n');
+  return Buffer.from(raw)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
 
 // ---------- Schema ----------
 
@@ -43,12 +219,12 @@ type GmailMessage = z.infer<typeof gmailMessageSchema>;
 
 // ---------- Helpers ----------
 
-function getClient(ctx: EntityResolverContext): GmailClient | null {
-  return (ctx as any).integrations?.gmail?.client ?? null;
+function getClient(ctx: GmailResolverContext): GmailClient | null {
+  return ctx.integrations?.gmail?.client ?? null;
 }
 
 function messageToEntity(
-  msg: any,
+  msg: GmailApiRawMessage,
   labels?: Array<{ id: string; name: string }>,
 ): GmailMessage {
   const headers = extractHeaders(msg.payload?.headers);
@@ -58,7 +234,7 @@ function messageToEntity(
   let labelNames: string | undefined;
   if (labels && labelIds.length) {
     const labelMap = new Map(labels.map((l) => [l.id, l.name]));
-    const names = labelIds.map((id: string) => labelMap.get(id)).filter(Boolean);
+    const names = labelIds.map((id) => labelMap.get(id)).filter(Boolean);
     if (names.length) labelNames = names.join(', ');
   }
 
@@ -84,7 +260,7 @@ function messageToEntity(
     isDraft: labelIds.includes('DRAFT'),
     bodyText: text || undefined,
     bodyHtml: html ?? undefined,
-    hasAttachments: hasAttachments(msg.payload),
+    hasAttachments: checkHasAttachments(msg.payload),
     url: `https://mail.google.com/mail/u/0/#inbox/${msg.id}`,
   };
 }
@@ -169,7 +345,7 @@ const GmailMessageEntity = defineEntity({
       aiHint: 'Use when the user wants to compose and send a new email.',
       inputSchema: composeInput,
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
 
         const input = params.input as z.infer<typeof composeInput>;
@@ -193,7 +369,7 @@ const GmailMessageEntity = defineEntity({
       aiHint: 'Use when the user wants to reply to an email.',
       inputSchema: replyInput,
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
         if (!params.entity) return { success: false, message: 'No entity provided' };
 
@@ -232,7 +408,7 @@ const GmailMessageEntity = defineEntity({
       aiHint: 'Use when the user wants to forward an email.',
       inputSchema: forwardInput,
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
         if (!params.entity) return { success: false, message: 'No entity provided' };
 
@@ -274,7 +450,7 @@ const GmailMessageEntity = defineEntity({
       scope: 'instance',
       aiHint: 'Use when the user wants to archive a message.',
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
         if (!params.entity) return { success: false, message: 'No entity provided' };
 
@@ -291,7 +467,7 @@ const GmailMessageEntity = defineEntity({
       scope: 'instance',
       aiHint: 'Use when the user wants to unarchive a message.',
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
         if (!params.entity) return { success: false, message: 'No entity provided' };
 
@@ -308,7 +484,7 @@ const GmailMessageEntity = defineEntity({
       scope: 'instance',
       aiHint: 'Use when the user wants to star an email.',
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
         if (!params.entity) return { success: false, message: 'No entity provided' };
 
@@ -324,7 +500,7 @@ const GmailMessageEntity = defineEntity({
       scope: 'instance',
       aiHint: 'Use when the user wants to remove the star from an email.',
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
         if (!params.entity) return { success: false, message: 'No entity provided' };
 
@@ -340,7 +516,7 @@ const GmailMessageEntity = defineEntity({
       scope: 'instance',
       aiHint: 'Use when the user wants to mark a message as read.',
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
         if (!params.entity) return { success: false, message: 'No entity provided' };
 
@@ -356,7 +532,7 @@ const GmailMessageEntity = defineEntity({
       scope: 'instance',
       aiHint: 'Use when the user wants to mark a message as unread.',
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
         if (!params.entity) return { success: false, message: 'No entity provided' };
 
@@ -372,7 +548,7 @@ const GmailMessageEntity = defineEntity({
       scope: 'instance',
       aiHint: 'Use when the user wants to delete/trash a message.',
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
         if (!params.entity) return { success: false, message: 'No entity provided' };
 
@@ -390,7 +566,7 @@ const GmailMessageEntity = defineEntity({
       aiHint: 'Use when the user wants to change labels on a message. Call list_labels first to find valid IDs.',
       inputSchema: modifyLabelsActionInput,
       handler: async (params: EntityActionParams<GmailMessage>, ctx: EntityResolverContext): Promise<EntityActionResult> => {
-        const client = getClient(ctx);
+        const client = getClient(ctx as GmailResolverContext);
         if (!client) return { success: false, message: 'No Gmail client configured' };
         if (!params.entity) return { success: false, message: 'No entity provided' };
 
@@ -403,7 +579,7 @@ const GmailMessageEntity = defineEntity({
   ],
 
   resolve: async ({ id }: { id: string }, ctx) => {
-    const client = getClient(ctx);
+    const client = getClient(ctx as GmailResolverContext);
     if (!client) return null;
 
     ctx.logger.info('Resolving gmail message', { messageId: id });
@@ -411,17 +587,17 @@ const GmailMessageEntity = defineEntity({
     try {
       const msg = await client.getMessage(id, 'full');
       return messageToEntity(msg);
-    } catch (err) {
+    } catch (err: unknown) {
       ctx.logger.error('Failed to resolve gmail message', {
         messageId: id,
-        error: err instanceof Error ? err.message : String(err),
+        error: getErrorMessage(err),
       });
       return null;
     }
   },
 
   search: async (query: string, options, ctx) => {
-    const client = getClient(ctx);
+    const client = getClient(ctx as GmailResolverContext);
     if (!client) return [];
 
     const limit = options?.limit ?? 10;
@@ -445,10 +621,10 @@ const GmailMessageEntity = defineEntity({
       const filtered = entities.filter((e): e is GmailMessage => e !== null);
       ctx.logger.info('Gmail search returned results', { query, resultCount: filtered.length });
       return filtered;
-    } catch (err) {
+    } catch (err: unknown) {
       ctx.logger.error('Failed to search gmail messages', {
         query,
-        error: err instanceof Error ? err.message : String(err),
+        error: getErrorMessage(err),
       });
       return [];
     }

@@ -268,8 +268,8 @@ export default function ThreadDrawer({ entityId, label, drawer }: EntityDrawerPr
     try {
       await replyMessage({ variables: { id: entityId, body, replyAll } });
       refetchThread();
-    } catch (err: any) {
-      logger.error('Failed to reply', { error: err?.message });
+    } catch (err: unknown) {
+      logger.error('Failed to reply', { error: err instanceof Error ? err.message : String(err) });
     }
   };
 

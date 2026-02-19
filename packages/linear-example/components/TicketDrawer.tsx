@@ -485,6 +485,7 @@ export default function TicketDrawer({ entityId, label, drawer }: EntityDrawerPr
       onLinkWorkstream={workstreamLinker.linkWorkstream}
       onUnlinkWorkstream={workstreamLinker.unlinkWorkstream}
       onStartWorkstream={(_id, title) => workstreamLinker.startWorkstream(title)}
+      onClickWorkstream={(ws) => { workstreamLinker.navigateToWorkstream(ws); drawer.close(); }}
     />
   );
 }

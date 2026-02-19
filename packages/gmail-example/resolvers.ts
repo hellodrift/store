@@ -9,13 +9,151 @@
  *   ctx.logger — scoped logger
  */
 
-// Helper: get Gmail client from context
-function getClient(ctx: any): any | null {
+// ---------- Gmail API response types ----------
+
+interface GmailApiHeader {
+  name: string;
+  value: string;
+}
+
+interface GmailApiBody {
+  data?: string;
+  size?: number;
+  attachmentId?: string;
+}
+
+interface GmailApiPart {
+  mimeType?: string;
+  filename?: string;
+  headers?: GmailApiHeader[];
+  body?: GmailApiBody;
+  parts?: GmailApiPart[];
+}
+
+interface GmailApiPayload {
+  mimeType?: string;
+  headers?: GmailApiHeader[];
+  body?: GmailApiBody;
+  parts?: GmailApiPart[];
+}
+
+interface GmailApiRawMessage {
+  id: string;
+  threadId: string;
+  labelIds?: string[];
+  snippet?: string;
+  internalDate?: string;
+  payload?: GmailApiPayload;
+}
+
+// ---------- GmailClient interface ----------
+
+interface GmailClient {
+  listMessages(params?: {
+    q?: string;
+    maxResults?: number;
+    labelIds?: string[];
+    pageToken?: string;
+  }): Promise<{ messages: Array<{ id: string; threadId: string }>; nextPageToken?: string; resultSizeEstimate?: number }>;
+  getMessage(id: string, format?: 'full' | 'metadata' | 'minimal'): Promise<GmailApiRawMessage>;
+  getThread(id: string): Promise<{ id: string; snippet?: string; messages: GmailApiRawMessage[] }>;
+  modifyMessage(id: string, addLabelIds?: string[], removeLabelIds?: string[]): Promise<GmailApiRawMessage>;
+  trashMessage(id: string): Promise<GmailApiRawMessage>;
+  untrashMessage(id: string): Promise<GmailApiRawMessage>;
+  sendMessage(raw: string, threadId?: string): Promise<{ id: string; threadId: string }>;
+  listLabels(): Promise<Array<{ id: string; name: string; type: string; messagesTotal?: number; messagesUnread?: number }>>;
+  getProfile(): Promise<{ emailAddress: string; messagesTotal: number; threadsTotal: number }>;
+}
+
+// ---------- Resolver context type ----------
+
+interface ResolverLogger {
+  info(msg: string, ctx?: Record<string, unknown>): void;
+  warn(msg: string, ctx?: Record<string, unknown>): void;
+  error(msg: string, ctx?: Record<string, unknown>): void;
+}
+
+interface GmailResolverContext {
+  integrations?: {
+    gmail?: {
+      client: GmailClient | null;
+    };
+  };
+  logger: ResolverLogger;
+}
+
+// ---------- GraphQL result types ----------
+
+interface GmailMessageGql {
+  id: string;
+  type: string;
+  uri: string;
+  title: string;
+  threadId: string;
+  snippet: string | null;
+  from: string | null;
+  to: string | null;
+  cc: string | null;
+  date: string | null;
+  messageId: string | null;
+  labelIds: string[];
+  labelNames: string | null;
+  isUnread: boolean;
+  isStarred: boolean;
+  isInbox: boolean;
+  isDraft: boolean;
+  bodyText: string | null;
+  bodyHtml: string | null;
+  hasAttachments: boolean;
+  url: string;
+}
+
+interface GmailThreadMessageGql {
+  id: string;
+  from: string | null;
+  to: string | null;
+  date: string | null;
+  snippet: string | null;
+  bodyText: string | null;
+  bodyHtml: string | null;
+  isUnread: boolean;
+}
+
+interface GmailThreadGql {
+  id: string;
+  subject: string | null;
+  messages: GmailThreadMessageGql[];
+  messageCount: number;
+}
+
+interface GmailLabelGql {
+  id: string;
+  name: string;
+  type: string;
+  messagesTotal: number | null;
+  messagesUnread: number | null;
+}
+
+interface EntityActionResultGql {
+  success: boolean;
+  message: string;
+}
+
+interface SendGmailMessageInput {
+  to: string;
+  subject: string;
+  body: string;
+  cc?: string;
+  bcc?: string;
+}
+
+// ---------- Helpers ----------
+
+function getClient(ctx: GmailResolverContext): GmailClient | null {
   return ctx.integrations?.gmail?.client ?? null;
 }
 
-// Helper: extract headers from Gmail API payload
-function extractHeaders(headers?: Array<{ name: string; value: string }>): Record<string, string> {
+function extractHeaders(headers?: GmailApiHeader[]): Record<string, string> {
   const result: Record<string, string> = {};
   if (!headers) return result;
   for (const h of headers) {
@@ -24,8 +162,7 @@ function extractHeaders(headers?: Array<{ name: string; value: string }>): Recor
   return result;
 }
 
-// Helper: extract body from Gmail API payload
-function extractBody(payload?: any): { text: string; html?: string } {
+function extractBody(payload?: GmailApiPayload): { text: string; html?: string } {
   if (!payload) return { text: '' };
 
   if (payload.body?.data) {
@@ -40,7 +177,7 @@ function extractBody(payload?: any): { text: string; html?: string } {
     let text = '';
     let html: string | undefined;
 
-    const walk = (parts: any[]) => {
+    const walk = (parts: GmailApiPart[]) => {
       for (const part of parts) {
         if (part.mimeType === 'text/plain' && part.body?.data) {
           text = Buffer.from(part.body.data, 'base64').toString('utf-8');
@@ -76,10 +213,10 @@ function htmlToText(html: string): string {
     .trim();
 }
 
-function hasAttachments(payload?: any): boolean {
+function checkHasAttachments(payload?: GmailApiPayload): boolean {
   if (!payload?.parts) return false;
   return payload.parts.some(
-    (part: any) => part.filename && part.filename.length > 0 && part.body?.attachmentId,
+    (part) => part.filename && part.filename.length > 0 && part.body?.attachmentId,
   );
 }
 
@@ -114,8 +251,12 @@ function buildRfc2822Message(params: {
     .replace(/=+$/, '');
 }
 
-// Helper: convert raw Gmail API message to GQL response object
-function messageToGql(msg: any): any {
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
+
+function messageToGql(msg: GmailApiRawMessage): GmailMessageGql {
   const headers = extractHeaders(msg.payload?.headers);
   const { text, html } = extractBody(msg.payload);
   const labelIds = msg.labelIds ?? [];
@@ -141,15 +282,16 @@ function messageToGql(msg: any): any {
     isDraft: labelIds.includes('DRAFT'),
     bodyText: text || null,
     bodyHtml: html ?? null,
-    hasAttachments: hasAttachments(msg.payload),
+    hasAttachments: checkHasAttachments(msg.payload),
     url: `https://mail.google.com/mail/u/0/#inbox/${msg.id}`,
   };
 }
 
-// GraphQL Resolvers
+// ---------- GraphQL Resolvers ----------
+
 export default {
   GmailMessage: {
-    linkedContext: async (parent: any, _args: unknown, ctx: any) => {
+    linkedContext: async (parent: GmailMessageGql, _args: unknown, ctx: GmailResolverContext): Promise<string | null> => {
       const client = getClient(ctx);
       if (!client || !parent.id) return null;
 
@@ -171,10 +313,10 @@ export default {
         }
 
         return lines.join('\n');
-      } catch (err: any) {
+      } catch (err: unknown) {
         ctx.logger.error('Failed to resolve linkedContext for GmailMessage', {
           messageId: parent.id,
-          error: err?.message ?? String(err),
+          error: getErrorMessage(err),
         });
         return null;
       }
@@ -182,7 +324,7 @@ export default {
   },
 
   Query: {
-    gmailMessage: async (_: unknown, { id }: { id: string }, ctx: any) => {
+    gmailMessage: async (_: unknown, { id }: { id: string }, ctx: GmailResolverContext): Promise<GmailMessageGql | null> => {
       const client = getClient(ctx);
       if (!client) return null;
 
@@ -191,10 +333,10 @@ export default {
       try {
         const msg = await client.getMessage(id, 'full');
         return messageToGql(msg);
-      } catch (err: any) {
+      } catch (err: unknown) {
         ctx.logger.error('Failed to resolve gmail message', {
           messageId: id,
-          error: err?.message ?? String(err),
+          error: getErrorMessage(err),
         });
         return null;
       }
@@ -203,8 +345,8 @@ export default {
     gmailMessages: async (
       _: unknown,
       { query, labelId, maxResults }: { query?: string; labelId?: string; maxResults?: number },
-      ctx: any,
-    ) => {
+      ctx: GmailResolverContext,
+    ): Promise<GmailMessageGql[]> => {
       const client = getClient(ctx);
       if (!client) {
         ctx.logger.warn('gmailMessages: no Gmail client available');
@@ -215,7 +357,6 @@ export default {
       ctx.logger.info('Searching gmail messages via GraphQL', { query, labelId, limit });
 
       try {
-        // Build Gmail search query
         const parts: string[] = [];
         if (labelId) parts.push(`in:${labelId.toLowerCase()}`);
         if (query) parts.push(query);
@@ -229,9 +370,8 @@ export default {
 
         if (!result.messages.length) return [];
 
-        // Fetch metadata for each message
         const messages = await Promise.all(
-          result.messages.slice(0, limit).map(async (m: any) => {
+          result.messages.slice(0, limit).map(async (m): Promise<GmailMessageGql | null> => {
             try {
               const msg = await client.getMessage(m.id, 'metadata');
               return messageToGql(msg);
@@ -241,18 +381,18 @@ export default {
           }),
         );
 
-        return messages.filter(Boolean);
-      } catch (err: any) {
+        return messages.filter((m): m is GmailMessageGql => m !== null);
+      } catch (err: unknown) {
         ctx.logger.error('Failed to search gmail messages', {
           query,
           labelId,
-          error: err?.message ?? String(err),
+          error: getErrorMessage(err),
         });
         return [];
       }
     },
 
-    gmailThread: async (_: unknown, { id }: { id: string }, ctx: any) => {
+    gmailThread: async (_: unknown, { id }: { id: string }, ctx: GmailResolverContext): Promise<GmailThreadGql | null> => {
       const client = getClient(ctx);
       if (!client) return null;
 
@@ -260,7 +400,7 @@ export default {
 
       try {
         const thread = await client.getThread(id);
-        const messages = (thread.messages ?? []).map((msg: any) => {
+        const messages: GmailThreadMessageGql[] = (thread.messages ?? []).map((msg) => {
           const headers = extractHeaders(msg.payload?.headers);
           const { text, html } = extractBody(msg.payload);
           return {
@@ -275,7 +415,6 @@ export default {
           };
         });
 
-        // Get subject from first message
         const firstMsg = thread.messages?.[0];
         const firstHeaders = extractHeaders(firstMsg?.payload?.headers);
 
@@ -285,45 +424,45 @@ export default {
           messages,
           messageCount: messages.length,
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
         ctx.logger.error('Failed to resolve gmail thread', {
           threadId: id,
-          error: err?.message ?? String(err),
+          error: getErrorMessage(err),
         });
         return null;
       }
     },
 
-    gmailLabels: async (_: unknown, __: unknown, ctx: any) => {
+    gmailLabels: async (_: unknown, __: unknown, ctx: GmailResolverContext): Promise<GmailLabelGql[]> => {
       const client = getClient(ctx);
       if (!client) return [];
 
       try {
         const labels = await client.listLabels();
-        return labels.map((l: any) => ({
+        return labels.map((l): GmailLabelGql => ({
           id: l.id,
           name: l.name,
           type: l.type === 'system' ? 'system' : 'user',
           messagesTotal: l.messagesTotal ?? null,
           messagesUnread: l.messagesUnread ?? null,
         }));
-      } catch (err: any) {
+      } catch (err: unknown) {
         ctx.logger.error('Failed to resolve gmail labels', {
-          error: err?.message ?? String(err),
+          error: getErrorMessage(err),
         });
         return [];
       }
     },
 
-    gmailProfile: async (_: unknown, __: unknown, ctx: any) => {
+    gmailProfile: async (_: unknown, __: unknown, ctx: GmailResolverContext) => {
       const client = getClient(ctx);
       if (!client) return null;
 
       try {
         return await client.getProfile();
-      } catch (err: any) {
+      } catch (err: unknown) {
         ctx.logger.error('Failed to resolve gmail profile', {
-          error: err?.message ?? String(err),
+          error: getErrorMessage(err),
         });
         return null;
       }
@@ -331,7 +470,7 @@ export default {
   },
 
   Mutation: {
-    sendGmailMessage: async (_: unknown, { input }: { input: any }, ctx: any) => {
+    sendGmailMessage: async (_: unknown, { input }: { input: SendGmailMessageInput }, ctx: GmailResolverContext): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
@@ -345,18 +484,18 @@ export default {
           cc: input.cc,
           bcc: input.bcc,
         });
-        const result = await client.sendMessage(raw);
+        await client.sendMessage(raw);
         return { success: true, message: `Email sent to ${input.to}` };
-      } catch (err: any) {
-        return { success: false, message: `Failed to send: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to send: ${getErrorMessage(err)}` };
       }
     },
 
     replyGmailMessage: async (
       _: unknown,
       { id, body, replyAll }: { id: string; body: string; replyAll?: boolean },
-      ctx: any,
-    ) => {
+      ctx: GmailResolverContext,
+    ): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
@@ -378,16 +517,16 @@ export default {
         });
         await client.sendMessage(raw, original.threadId);
         return { success: true, message: 'Reply sent' };
-      } catch (err: any) {
-        return { success: false, message: `Failed to reply: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to reply: ${getErrorMessage(err)}` };
       }
     },
 
     forwardGmailMessage: async (
       _: unknown,
       { id, to, body: extraBody }: { id: string; to: string; body?: string },
-      ctx: any,
-    ) => {
+      ctx: GmailResolverContext,
+    ): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
@@ -414,108 +553,108 @@ export default {
         const raw = buildRfc2822Message({ to, subject, body: forwardBody });
         await client.sendMessage(raw);
         return { success: true, message: `Email forwarded to ${to}` };
-      } catch (err: any) {
-        return { success: false, message: `Failed to forward: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to forward: ${getErrorMessage(err)}` };
       }
     },
 
-    archiveGmailMessage: async (_: unknown, { id }: { id: string }, ctx: any) => {
+    archiveGmailMessage: async (_: unknown, { id }: { id: string }, ctx: GmailResolverContext): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
       try {
         await client.modifyMessage(id, [], ['INBOX']);
         return { success: true, message: 'Message archived' };
-      } catch (err: any) {
-        return { success: false, message: `Failed to archive: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to archive: ${getErrorMessage(err)}` };
       }
     },
 
-    unarchiveGmailMessage: async (_: unknown, { id }: { id: string }, ctx: any) => {
+    unarchiveGmailMessage: async (_: unknown, { id }: { id: string }, ctx: GmailResolverContext): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
       try {
         await client.modifyMessage(id, ['INBOX'], []);
         return { success: true, message: 'Message moved to inbox' };
-      } catch (err: any) {
-        return { success: false, message: `Failed to unarchive: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to unarchive: ${getErrorMessage(err)}` };
       }
     },
 
-    trashGmailMessage: async (_: unknown, { id }: { id: string }, ctx: any) => {
+    trashGmailMessage: async (_: unknown, { id }: { id: string }, ctx: GmailResolverContext): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
       try {
         await client.trashMessage(id);
         return { success: true, message: 'Message moved to trash' };
-      } catch (err: any) {
-        return { success: false, message: `Failed to trash: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to trash: ${getErrorMessage(err)}` };
       }
     },
 
-    starGmailMessage: async (_: unknown, { id }: { id: string }, ctx: any) => {
+    starGmailMessage: async (_: unknown, { id }: { id: string }, ctx: GmailResolverContext): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
       try {
         await client.modifyMessage(id, ['STARRED'], []);
         return { success: true, message: 'Message starred' };
-      } catch (err: any) {
-        return { success: false, message: `Failed to star: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to star: ${getErrorMessage(err)}` };
       }
     },
 
-    unstarGmailMessage: async (_: unknown, { id }: { id: string }, ctx: any) => {
+    unstarGmailMessage: async (_: unknown, { id }: { id: string }, ctx: GmailResolverContext): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
       try {
         await client.modifyMessage(id, [], ['STARRED']);
         return { success: true, message: 'Message unstarred' };
-      } catch (err: any) {
-        return { success: false, message: `Failed to unstar: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to unstar: ${getErrorMessage(err)}` };
       }
     },
 
-    markGmailMessageRead: async (_: unknown, { id }: { id: string }, ctx: any) => {
+    markGmailMessageRead: async (_: unknown, { id }: { id: string }, ctx: GmailResolverContext): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
       try {
         await client.modifyMessage(id, [], ['UNREAD']);
         return { success: true, message: 'Message marked as read' };
-      } catch (err: any) {
-        return { success: false, message: `Failed to mark as read: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to mark as read: ${getErrorMessage(err)}` };
       }
     },
 
-    markGmailMessageUnread: async (_: unknown, { id }: { id: string }, ctx: any) => {
+    markGmailMessageUnread: async (_: unknown, { id }: { id: string }, ctx: GmailResolverContext): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
       try {
         await client.modifyMessage(id, ['UNREAD'], []);
         return { success: true, message: 'Message marked as unread' };
-      } catch (err: any) {
-        return { success: false, message: `Failed to mark as unread: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to mark as unread: ${getErrorMessage(err)}` };
       }
     },
 
     modifyGmailLabels: async (
       _: unknown,
       { id, addLabelIds, removeLabelIds }: { id: string; addLabelIds?: string[]; removeLabelIds?: string[] },
-      ctx: any,
-    ) => {
+      ctx: GmailResolverContext,
+    ): Promise<EntityActionResultGql> => {
       const client = getClient(ctx);
       if (!client) return { success: false, message: 'No Gmail client configured' };
 
       try {
         await client.modifyMessage(id, addLabelIds ?? [], removeLabelIds ?? []);
         return { success: true, message: 'Labels updated' };
-      } catch (err: any) {
-        return { success: false, message: `Failed to modify labels: ${err?.message ?? String(err)}` };
+      } catch (err: unknown) {
+        return { success: false, message: `Failed to modify labels: ${getErrorMessage(err)}` };
       }
     },
   },

@@ -23,6 +23,11 @@
       "component": "components/LinearWidget.tsx",
       "entityType": "linear_issue"
     },
+    "floating-widget": {
+      "component": "components/LinearFloatingWidget.tsx",
+      "entityType": "linear_issue",
+      "autoDetach": false
+    },
     "drawer": {
       "component": "components/SettingsDrawer.tsx"
     }

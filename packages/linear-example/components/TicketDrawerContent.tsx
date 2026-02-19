@@ -141,6 +141,7 @@ export interface TicketDrawerContentProps {
   onLinkWorkstream?: (workstreamId: string) => void;
   onUnlinkWorkstream?: (workstream: LinkedWorkstream) => void;
   onStartWorkstream?: (entityId: string, entityTitle: string) => void;
+  onClickWorkstream?: (workstream: LinkedWorkstream) => void;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -258,6 +259,7 @@ export default function TicketDrawerContent({
   onLinkWorkstream,
   onUnlinkWorkstream,
   onStartWorkstream,
+  onClickWorkstream,
 }: TicketDrawerContentProps) {
   const [commentDraft, setCommentDraft] = useState('');
   const [postingComment, setPostingComment] = useState(false);
@@ -849,6 +851,7 @@ export default function TicketDrawerContent({
               entityTitle={issue.identifier ? `${issue.identifier} ${issue.title}` : issue.title}
               activeWorkstreams={activeWorkstreams}
               onRemove={onUnlinkWorkstream}
+              onClick={onClickWorkstream}
               onStartWorkstream={onStartWorkstream}
               onAddToWorkstream={onLinkWorkstream}
             />

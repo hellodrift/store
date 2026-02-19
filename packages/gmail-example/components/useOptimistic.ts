@@ -42,7 +42,7 @@ export interface UseOptimisticResult<T> {
   dismissError: () => void;
 }
 
-export function useOptimistic<T extends Record<string, any>>(
+export function useOptimistic<T extends Record<string, unknown>>(
   serverData: T | undefined,
   options: { errorTimeout?: number } = {},
 ): UseOptimisticResult<T> {
@@ -88,8 +88,8 @@ export function useOptimistic<T extends Record<string, any>>(
 
     // Run the async action in the background.
     action()
-      .catch((err: any) => {
-        setError(err?.message ?? 'Update failed');
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Update failed');
       })
       .finally(() => {
         // Clear overrides only for fields where we are still the latest writer.
