@@ -1,0 +1,11 @@
+{
+  "name": "@drift/plugin-trello",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Official Drift plugin: Trello cards, boards, and lists",
+  "dependencies": {
+    "@drift/entity-sdk": "*",
+    "trello.js": "^1.2.3",
+    "zod": "^3.22.0"
+  }
+}

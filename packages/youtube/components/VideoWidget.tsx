@@ -10,7 +10,7 @@
  * auto-detaches and becomes a mini picture-in-picture player.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useEntityQuery, gql, logger } from '@drift/plugin-api';
 
 // ---------- GraphQL ----------
@@ -122,12 +122,40 @@ function VideoChip({ video, loading, label }: { video?: YoutubeVideo; loading: b
 
 function VideoCard({ video, loading, error }: { video?: YoutubeVideo; loading: boolean; error?: { message: string } }) {
   const [playing, setPlaying] = useState(false);
+  const playStartedAt = useRef<number>(0);
 
   const handlePlay = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setPlaying(true);
   }, []);
+
+  // When playback starts, record it in sessionStorage so the floating widget can resume
+  useEffect(() => {
+    if (!playing || !video) return;
+    playStartedAt.current = Date.now();
+    sessionStorage.setItem(`yt-playing-${video.videoId}`, JSON.stringify({
+      playing: true,
+      timestamp: 0,
+      savedAt: Date.now(),
+    }));
+
+    // Periodically update the estimated timestamp while playing
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - playStartedAt.current) / 1000);
+      sessionStorage.setItem(`yt-playing-${video.videoId}`, JSON.stringify({
+        playing: true,
+        timestamp: elapsed,
+        savedAt: Date.now(),
+      }));
+    }, 3000);
+
+    return () => {
+      clearInterval(interval);
+      // Don't clear sessionStorage here — the floating widget needs to read it
+      // when autoDetach fires. The floating widget clears it after reading.
+    };
+  }, [playing, video]);
 
   if (loading) {
     return (

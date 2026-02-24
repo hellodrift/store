@@ -1,0 +1,92 @@
+{
+  "id": "trello",
+  "displayName": "Trello",
+  "description": "Trello boards, lists, and cards integration.",
+  "author": {
+    "name": "Drift Team"
+  },
+  "license": "MIT",
+  "repository": "hellodrift/store",
+  "path": "packages/trello",
+  "latest": "0.1.0",
+  "versions": {
+    "0.1.0": {
+      "ref": "main",
+      "driftCompat": ">=0.8.0",
+      "publishedAt": "2026-02-24T12:39:46.016Z"
+    }
+  },
+  "keywords": [],
+  "icon": "layout",
+  "provides": {
+    "integrations": [
+      "trello"
+    ],
+    "canvases": [
+      "nav-sidebar",
+      "entity-drawer",
+      "entity-widget",
+      "feed-card",
+      "drawer"
+    ],
+    "entities": [
+      "trello_board",
+      "trello_card",
+      "trello_list"
+    ],
+    "operations": [
+      {
+        "id": "list_lists",
+        "description": "List all open lists (columns) on a Trello board"
+      },
+      {
+        "id": "list_members",
+        "description": "List members of a Trello board"
+      },
+      {
+        "id": "list_labels",
+        "description": "List labels defined on a Trello board"
+      },
+      {
+        "id": "list_checklists",
+        "description": "List all checklists and their items on a Trello card"
+      },
+      {
+        "id": "add_checklist",
+        "description": "Add a new checklist to a Trello card",
+        "mutation": true
+      },
+      {
+        "id": "add_checklist_item",
+        "description": "Add a new item to an existing checklist on a Trello card",
+        "mutation": true
+      },
+      {
+        "id": "complete_checklist_item",
+        "description": "Mark a checklist item as complete or incomplete",
+        "mutation": true
+      },
+      {
+        "id": "search_cards",
+        "description": "Full-text search for Trello cards"
+      },
+      {
+        "id": "list_actions",
+        "description": "List recent activity and comments on a Trello card"
+      },
+      {
+        "id": "create_board",
+        "description": "Create a new Trello board"
+      },
+      {
+        "id": "create_card",
+        "description": "Create a new Trello card on a list"
+      },
+      {
+        "id": "create_list",
+        "description": "Create a new list on a Trello board"
+      }
+    ]
+  },
+  "verified": true
+}

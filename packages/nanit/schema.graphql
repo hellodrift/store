@@ -1,0 +1,11 @@
+type NanitCam {
+  id: ID!
+  babyUid: String!
+  name: String!
+  status: String!
+  linkedContext: String
+}
+
+type Query {
+  nanitCam(babyUid: String!): NanitCam
+}

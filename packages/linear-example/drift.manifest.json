@@ -30,6 +30,11 @@
     },
     "drawer": {
       "component": "components/SettingsDrawer.tsx"
+    },
+    "feed-card": {
+      "component": "components/LinearFeedCard.tsx",
+      "entityType": "linear_issue",
+      "defaultSize": "medium"
     }
   }
 }

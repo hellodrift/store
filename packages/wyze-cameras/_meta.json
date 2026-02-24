@@ -1,0 +1,45 @@
+{
+  "id": "wyze-cameras",
+  "displayName": "Wyze Cameras",
+  "description": "Live Wyze camera streams with WebRTC video and camera controls",
+  "author": {
+    "name": "Drift Team"
+  },
+  "license": "MIT",
+  "repository": "hellodrift/store",
+  "path": "packages/wyze-cameras",
+  "latest": "0.2.0",
+  "versions": {
+    "0.2.0": {
+      "ref": "main",
+      "driftCompat": ">=0.8.0",
+      "publishedAt": "2026-02-24T12:39:46.017Z"
+    }
+  },
+  "keywords": [],
+  "icon": "📷",
+  "provides": {
+    "canvases": [
+      "nav-sidebar",
+      "drawer",
+      "entity-widget",
+      "floating-widget",
+      "entity-drawer",
+      "feed-card"
+    ],
+    "entities": [
+      "wyze_cam"
+    ],
+    "operations": [
+      {
+        "id": "show_camera",
+        "description": "Show a specific Wyze camera live feed"
+      },
+      {
+        "id": "list_cameras",
+        "description": "List all available Wyze cameras"
+      }
+    ]
+  },
+  "verified": true
+}

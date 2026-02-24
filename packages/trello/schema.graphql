@@ -1,0 +1,164 @@
+type TrelloCard {
+  id: ID!
+  type: String!
+  uri: String!
+  title: String!
+  desc: String
+  idList: String!
+  listName: String
+  idBoard: String!
+  boardName: String
+  idMembers: [String!]
+  memberNames: String
+  members: [TrelloMember!]
+  labels: [TrelloLabel!]
+  labelNames: String
+  due: String
+  dueComplete: Boolean
+  start: String
+  closed: Boolean
+  url: String
+  shortUrl: String
+  shortLink: String
+  pos: Float
+  checkItemsTotal: Int
+  checkItemsChecked: Int
+  checklistCount: Int
+  checklists: [TrelloChecklist!]
+  commentCount: Int
+  dateLastActivity: String
+  linkedContext: String
+}
+
+type TrelloBoard {
+  id: ID!
+  type: String!
+  uri: String!
+  title: String!
+  desc: String
+  closed: Boolean
+  idOrganization: String
+  url: String
+  shortUrl: String
+  memberCount: Int
+  listCount: Int
+  lists: [TrelloListSummary!]
+  labels: [TrelloLabel!]
+  linkedContext: String
+}
+
+type TrelloList {
+  id: ID!
+  type: String!
+  uri: String!
+  title: String!
+  idBoard: String!
+  boardName: String
+  closed: Boolean
+  pos: Float
+  cardCount: Int
+  linkedContext: String
+}
+
+type TrelloMember {
+  id: ID!
+  username: String!
+  fullName: String!
+  initials: String
+  avatarUrl: String
+}
+
+type TrelloLabel {
+  id: ID!
+  name: String
+  color: String
+  idBoard: String
+}
+
+type TrelloChecklist {
+  id: ID!
+  name: String!
+  pos: Float
+  checkItems: [TrelloCheckItem!]!
+}
+
+type TrelloCheckItem {
+  id: ID!
+  name: String!
+  state: String!
+  pos: Float
+}
+
+type TrelloAction {
+  id: ID!
+  type: String!
+  date: String!
+  text: String
+  memberCreatorName: String
+}
+
+type TrelloListSummary {
+  id: ID!
+  name: String!
+  pos: Float
+  closed: Boolean
+}
+
+extend type Query {
+  trelloCard(id: ID!): TrelloCard
+  trelloCards(query: String, boardId: ID, listId: ID, limit: Int): [TrelloCard!]!
+  trelloMyCards(limit: Int): [TrelloCard!]!
+  trelloBoardCards(boardId: ID!, listId: ID, limit: Int): [TrelloCard!]!
+  trelloBoard(id: ID!): TrelloBoard
+  trelloBoards(filter: String): [TrelloBoard!]!
+  trelloList(id: ID!): TrelloList
+  trelloLists(boardId: ID!): [TrelloList!]!
+  trelloMembers(boardId: ID): [TrelloMember!]!
+  trelloLabels(boardId: ID!): [TrelloLabel!]!
+  trelloChecklists(cardId: ID!): [TrelloChecklist!]!
+  trelloActions(cardId: ID!, filter: String): [TrelloAction!]!
+}
+
+extend type Mutation {
+  createTrelloCard(input: CreateTrelloCardInput!): EntityActionResult!
+  updateTrelloCard(id: ID!, input: UpdateTrelloCardInput!): EntityActionResult!
+  archiveTrelloCard(id: ID!): EntityActionResult!
+  deleteTrelloCard(id: ID!): EntityActionResult!
+  moveTrelloCard(id: ID!, idList: ID!, pos: String): EntityActionResult!
+  addTrelloCardComment(cardId: ID!, text: String!): EntityActionResult!
+  addTrelloChecklist(cardId: ID!, name: String!): EntityActionResult!
+  completeTrelloCheckItem(cardId: ID!, checkItemId: ID!, complete: Boolean!): EntityActionResult!
+  createTrelloBoard(input: CreateTrelloBoardInput!): EntityActionResult!
+  createTrelloList(boardId: ID!, name: String!, pos: String): EntityActionResult!
+  updateTrelloList(id: ID!, name: String, closed: Boolean, pos: String): EntityActionResult!
+}
+
+input CreateTrelloCardInput {
+  idList: String!
+  name: String!
+  desc: String
+  due: String
+  dueReminder: Int
+  start: String
+  idMembers: [String!]
+  idLabels: [String!]
+  pos: String
+}
+
+input UpdateTrelloCardInput {
+  name: String
+  desc: String
+  due: String
+  dueComplete: Boolean
+  start: String
+  closed: Boolean
+  pos: String
+}
+
+input CreateTrelloBoardInput {
+  name: String!
+  desc: String
+  idOrganization: String
+  defaultLists: Boolean
+  defaultLabels: Boolean
+}

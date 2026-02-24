@@ -8,7 +8,9 @@
     "linear-example",
     "mobile-notification",
     "slack",
+    "trello",
     "youtube",
-    "nanit"
+    "nanit",
+    "wyze-cameras"
   ]
 }

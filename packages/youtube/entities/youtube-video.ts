@@ -124,6 +124,7 @@ const YoutubeVideoEntity = defineEntity({
       { key: 'publishedAt', label: 'Published', metadataPath: 'publishedAt', format: 'date' },
       { key: 'watchUrl', label: 'Watch URL', metadataPath: 'watchUrl', format: 'string' },
     ],
+    showInPalette: false,
   },
 
   cache: {

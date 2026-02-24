@@ -151,11 +151,11 @@ const GithubPREntity = defineEntity({
       border: '#2ea043',
     },
     description: 'GitHub pull requests for code review and merging',
-    filterDescriptions: {
-      state: 'PR state (open, closed, merged)',
-      author: 'PR author username',
-      reviewState: 'Review status (approved, changes_requested, pending)',
-    },
+    filterDescriptions: [
+      { name: 'state', type: 'string', description: 'PR state (open, closed, merged)' },
+      { name: 'author', type: 'string', description: 'PR author username' },
+      { name: 'reviewState', type: 'string', description: 'Review status (approved, changes_requested, pending)' },
+    ],
     outputFields: [
       { key: 'repo', label: 'Repository', metadataPath: 'repo', format: 'string' },
       { key: 'author', label: 'Author', metadataPath: 'author', format: 'string' },

@@ -72,6 +72,7 @@ const MobileNotificationEntity = defineEntity({
       { key: 'category', label: 'Category', metadataPath: 'category', format: 'string' },
       { key: 'sent', label: 'Devices', metadataPath: 'sent', format: 'string' },
     ],
+    showInPalette: false,
   },
 
   integrations: { drift_notifications: 'drift_notifications' },

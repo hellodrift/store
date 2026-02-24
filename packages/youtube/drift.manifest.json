@@ -21,6 +21,11 @@
     "entity-drawer": {
       "component": "components/VideoDrawer.tsx",
       "entityType": "youtube_video"
+    },
+    "feed-card": {
+      "component": "components/VideoFeedCard.tsx",
+      "entityType": "youtube_video",
+      "defaultSize": "large"
     }
   }
 }

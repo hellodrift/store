@@ -1,0 +1,44 @@
+{
+  "$schema": "https://registry.drift.dev/manifest/v1.json",
+  "name": "wyze-cameras",
+  "version": "0.2.0",
+  "displayName": "Wyze Cameras",
+  "description": "Live Wyze camera streams with WebRTC video and camera controls",
+
+  "graphql": {
+    "schema": "schema.graphql",
+    "resolvers": "resolvers.ts"
+  },
+
+  "canvases": {
+    "nav-sidebar": {
+      "component": "components/NavSection.tsx",
+      "label": "Wyze Cameras",
+      "icon": "📷",
+      "priority": 75
+    },
+    "drawer": {
+      "component": "components/Drawer.tsx",
+      "label": "Wyze Camera",
+      "icon": "📷"
+    },
+    "entity-widget": {
+      "component": "components/WyzeCamWidget.tsx",
+      "entityType": "wyze_cam"
+    },
+    "floating-widget": {
+      "component": "components/WyzeCamFloatingWidget.tsx",
+      "entityType": "wyze_cam",
+      "autoDetach": false
+    },
+    "entity-drawer": {
+      "component": "components/WyzeCamEntityDrawer.tsx",
+      "entityType": "wyze_cam"
+    },
+    "feed-card": {
+      "component": "components/WyzeFeedCard.tsx",
+      "entityType": "wyze_cam",
+      "defaultSize": "medium"
+    }
+  }
+}

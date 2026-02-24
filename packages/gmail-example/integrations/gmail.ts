@@ -43,14 +43,16 @@ interface GmailApiRawMessage {
 }
 
 export class GmailClient {
-  constructor(private accessToken: string) {}
+  constructor(private tokenProvider: () => Promise<string | null>) {}
 
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
+    const token = await this.tokenProvider();
+    if (!token) throw new Error('No access token available');
     const url = `${GMAIL_API}${path}`;
     const response = await fetch(url, {
       ...init,
       headers: {
-        Authorization: `Bearer ${this.accessToken}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
         ...init?.headers,
       },
@@ -332,9 +334,11 @@ export const gmailIntegration = defineIntegration<GmailClient>({
 
   createClient: async (ctx) => {
     if (ctx.oauth) {
-      const oauthToken = await ctx.oauth.getAccessToken('google');
-      if (oauthToken) {
-        return new GmailClient(oauthToken);
+      const tokenProvider = async () => ctx.oauth!.getAccessToken('google');
+      // Verify we can get a token before returning the client
+      const initialToken = await tokenProvider();
+      if (initialToken) {
+        return new GmailClient(tokenProvider);
       }
     }
 

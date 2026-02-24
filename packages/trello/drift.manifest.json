@@ -1,0 +1,35 @@
+{
+  "name": "trello",
+  "displayName": "Trello",
+  "description": "Trello boards, lists, and cards integration.",
+  "version": "0.1.0",
+  "integrations": ["trello"],
+  "graphql": {
+    "schema": "schema.graphql",
+    "resolvers": "resolvers.ts"
+  },
+  "canvases": {
+    "nav-sidebar": {
+      "component": "components/NavSection.tsx",
+      "label": "Trello",
+      "icon": "layout",
+      "priority": 60
+    },
+    "entity-drawer": [
+      { "component": "components/CardDrawer.tsx", "entityType": "trello_card" },
+      { "component": "components/BoardDrawer.tsx", "entityType": "trello_board" }
+    ],
+    "entity-widget": {
+      "component": "components/CardWidget.tsx",
+      "entityType": "trello_card"
+    },
+    "feed-card": {
+      "component": "components/CardFeedCard.tsx",
+      "entityType": "trello_card",
+      "defaultSize": "medium"
+    },
+    "drawer": {
+      "component": "components/SettingsDrawer.tsx"
+    }
+  }
+}

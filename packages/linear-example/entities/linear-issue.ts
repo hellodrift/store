@@ -268,6 +268,62 @@ const LinearIssueEntity = defineEntity({
     ],
   },
 
+  paletteFilters: [
+    {
+      // Matches metadata.status (stored as lowercase with underscores, e.g. "in_progress").
+      // Filter IDs use hyphens; applyFilters normalizes both before comparing.
+      // Values are fetched dynamically so each org sees their own workflow states.
+      key: 'status',
+      label: 'Status',
+      aliases: ['s'],
+      values: [], // placeholder — overridden by fetchValues at runtime
+      fetchValues: async (ctx: EntityResolverContext) => {
+        const client = getClient(ctx);
+        if (!client) return [];
+        try {
+          const states = await client.workflowStates();
+          if (!states?.nodes) return [];
+          // Deduplicate by normalized name — workflowStates() returns states
+          // from ALL teams, so multi-team orgs see duplicates.
+          const seen = new Set<string>();
+          return states.nodes
+            .map((state: any) => ({
+              // ID matches the normalization in issueToEntity and applyFilters:
+              // state.name "In Progress" → metadata.status "in_progress" → normalized "in-progress"
+              id: state.name.toLowerCase().replace(/\s+/g, '-'),
+              label: state.name,
+              colorToken:
+                state.type === 'completed' ? 'success'
+                : state.type === 'cancelled' ? 'muted'
+                : state.type === 'started' ? 'brand'
+                : undefined,
+            }))
+            .filter((v: { id: string }) => {
+              if (seen.has(v.id)) return false;
+              seen.add(v.id);
+              return true;
+            });
+        } catch {
+          return [];
+        }
+      },
+    },
+    {
+      // Matches metadata.priorityLabel ("Urgent", "High", "Normal", "Low", "No priority")
+      // Aliased as 'priority' and 'p' so users can type "priority:high"
+      key: 'priorityLabel',
+      label: 'Priority',
+      aliases: ['priority', 'p'],
+      values: [
+        { id: 'urgent',      label: 'Urgent',      colorToken: 'error'   },
+        { id: 'high',        label: 'High',         colorToken: 'warning' },
+        { id: 'normal',      label: 'Normal',       colorToken: 'brand'   },
+        { id: 'low',         label: 'Low',          colorToken: 'muted'   },
+        { id: 'no-priority', label: 'No Priority'                         },
+      ],
+    },
+  ],
+
   integrations: { linear: 'linear' },
 
   cache: {

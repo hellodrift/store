@@ -1,0 +1,13 @@
+type WyzeCam {
+  id: ID!
+  cameraNameUri: String!
+  nickname: String!
+  online: Boolean!
+  model_name: String
+  linkedContext: String
+}
+
+type Query {
+  wyzeCam(cameraNameUri: String!): WyzeCam
+  wyzeCams: [WyzeCam!]!
+}

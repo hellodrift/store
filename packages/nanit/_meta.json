@@ -1,19 +1,19 @@
 {
   "id": "nanit",
   "displayName": "Nanit",
-  "description": "Live baby camera stream from Nanit",
+  "description": "Live baby camera stream from Nanit — widget cards with auto-detaching PiP player",
   "author": {
     "name": "Drift Team"
   },
   "license": "MIT",
   "repository": "hellodrift/store",
   "path": "packages/nanit",
-  "latest": "0.1.0",
+  "latest": "0.2.0",
   "versions": {
-    "0.1.0": {
+    "0.2.0": {
       "ref": "main",
       "driftCompat": ">=0.8.0",
-      "publishedAt": "2026-02-19T18:01:28.832Z"
+      "publishedAt": "2026-02-24T12:39:46.017Z"
     }
   },
   "keywords": [],
@@ -21,7 +21,20 @@
   "provides": {
     "canvases": [
       "nav-sidebar",
-      "drawer"
+      "drawer",
+      "entity-widget",
+      "floating-widget",
+      "entity-drawer",
+      "feed-card"
+    ],
+    "entities": [
+      "nanit_cam"
+    ],
+    "operations": [
+      {
+        "id": "show_camera",
+        "description": "Show the live camera feed in a widget card"
+      }
     ]
   },
   "verified": true

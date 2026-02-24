@@ -19,9 +19,9 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// node_modules/axios/lib/helpers/bind.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/bind.js
 var require_bind = __commonJS({
-  "node_modules/axios/lib/helpers/bind.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/bind.js"(exports2, module2) {
     "use strict";
     module2.exports = function bind(fn, thisArg) {
       return function wrap() {
@@ -35,9 +35,9 @@ var require_bind = __commonJS({
   }
 });
 
-// node_modules/axios/lib/utils.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/utils.js
 var require_utils = __commonJS({
-  "node_modules/axios/lib/utils.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/utils.js"(exports2, module2) {
     "use strict";
     var bind = require_bind();
     var toString = Object.prototype.toString;
@@ -188,9 +188,9 @@ var require_utils = __commonJS({
   }
 });
 
-// node_modules/axios/lib/helpers/buildURL.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/buildURL.js
 var require_buildURL = __commonJS({
-  "node_modules/axios/lib/helpers/buildURL.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/buildURL.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     function encode(val) {
@@ -239,9 +239,9 @@ var require_buildURL = __commonJS({
   }
 });
 
-// node_modules/axios/lib/core/InterceptorManager.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/InterceptorManager.js
 var require_InterceptorManager = __commonJS({
-  "node_modules/axios/lib/core/InterceptorManager.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/InterceptorManager.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     function InterceptorManager() {
@@ -272,9 +272,9 @@ var require_InterceptorManager = __commonJS({
   }
 });
 
-// node_modules/axios/lib/helpers/normalizeHeaderName.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/normalizeHeaderName.js
 var require_normalizeHeaderName = __commonJS({
-  "node_modules/axios/lib/helpers/normalizeHeaderName.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/normalizeHeaderName.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     module2.exports = function normalizeHeaderName(headers, normalizedName) {
@@ -288,9 +288,9 @@ var require_normalizeHeaderName = __commonJS({
   }
 });
 
-// node_modules/axios/lib/core/enhanceError.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/enhanceError.js
 var require_enhanceError = __commonJS({
-  "node_modules/axios/lib/core/enhanceError.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/enhanceError.js"(exports2, module2) {
     "use strict";
     module2.exports = function enhanceError(error, config, code, request, response) {
       error.config = config;
@@ -323,9 +323,9 @@ var require_enhanceError = __commonJS({
   }
 });
 
-// node_modules/axios/lib/core/createError.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/createError.js
 var require_createError = __commonJS({
-  "node_modules/axios/lib/core/createError.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/createError.js"(exports2, module2) {
     "use strict";
     var enhanceError = require_enhanceError();
     module2.exports = function createError(message, config, code, request, response) {
@@ -335,9 +335,9 @@ var require_createError = __commonJS({
   }
 });
 
-// node_modules/axios/lib/core/settle.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/settle.js
 var require_settle = __commonJS({
-  "node_modules/axios/lib/core/settle.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/settle.js"(exports2, module2) {
     "use strict";
     var createError = require_createError();
     module2.exports = function settle(resolve, reject, response) {
@@ -357,9 +357,9 @@ var require_settle = __commonJS({
   }
 });
 
-// node_modules/axios/lib/helpers/cookies.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/cookies.js
 var require_cookies = __commonJS({
-  "node_modules/axios/lib/helpers/cookies.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/cookies.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     module2.exports = utils.isStandardBrowserEnv() ? (
@@ -409,9 +409,9 @@ var require_cookies = __commonJS({
   }
 });
 
-// node_modules/axios/lib/helpers/isAbsoluteURL.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/isAbsoluteURL.js
 var require_isAbsoluteURL = __commonJS({
-  "node_modules/axios/lib/helpers/isAbsoluteURL.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/isAbsoluteURL.js"(exports2, module2) {
     "use strict";
     module2.exports = function isAbsoluteURL(url) {
       return /^([a-z][a-z\d\+\-\.]*:)?\/\//i.test(url);
@@ -419,9 +419,9 @@ var require_isAbsoluteURL = __commonJS({
   }
 });
 
-// node_modules/axios/lib/helpers/combineURLs.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/combineURLs.js
 var require_combineURLs = __commonJS({
-  "node_modules/axios/lib/helpers/combineURLs.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/combineURLs.js"(exports2, module2) {
     "use strict";
     module2.exports = function combineURLs(baseURL, relativeURL) {
       return relativeURL ? baseURL.replace(/\/+$/, "") + "/" + relativeURL.replace(/^\/+/, "") : baseURL;
@@ -429,9 +429,9 @@ var require_combineURLs = __commonJS({
   }
 });
 
-// node_modules/axios/lib/core/buildFullPath.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/buildFullPath.js
 var require_buildFullPath = __commonJS({
-  "node_modules/axios/lib/core/buildFullPath.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/buildFullPath.js"(exports2, module2) {
     "use strict";
     var isAbsoluteURL = require_isAbsoluteURL();
     var combineURLs = require_combineURLs();
@@ -444,9 +444,9 @@ var require_buildFullPath = __commonJS({
   }
 });
 
-// node_modules/axios/lib/helpers/parseHeaders.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/parseHeaders.js
 var require_parseHeaders = __commonJS({
-  "node_modules/axios/lib/helpers/parseHeaders.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/parseHeaders.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     var ignoreDuplicateOf = [
@@ -496,9 +496,9 @@ var require_parseHeaders = __commonJS({
   }
 });
 
-// node_modules/axios/lib/helpers/isURLSameOrigin.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/isURLSameOrigin.js
 var require_isURLSameOrigin = __commonJS({
-  "node_modules/axios/lib/helpers/isURLSameOrigin.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/isURLSameOrigin.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     module2.exports = utils.isStandardBrowserEnv() ? (
@@ -543,9 +543,9 @@ var require_isURLSameOrigin = __commonJS({
   }
 });
 
-// node_modules/axios/lib/adapters/xhr.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/adapters/xhr.js
 var require_xhr = __commonJS({
-  "node_modules/axios/lib/adapters/xhr.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/adapters/xhr.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     var settle = require_settle();
@@ -672,14 +672,777 @@ var require_xhr = __commonJS({
   }
 });
 
-// node_modules/follow-redirects/debug.js
+// ../../node_modules/.pnpm/ms@2.1.3/node_modules/ms/index.js
+var require_ms = __commonJS({
+  "../../node_modules/.pnpm/ms@2.1.3/node_modules/ms/index.js"(exports2, module2) {
+    var s = 1e3;
+    var m = s * 60;
+    var h = m * 60;
+    var d = h * 24;
+    var w = d * 7;
+    var y = d * 365.25;
+    module2.exports = function(val, options) {
+      options = options || {};
+      var type = typeof val;
+      if (type === "string" && val.length > 0) {
+        return parse(val);
+      } else if (type === "number" && isFinite(val)) {
+        return options.long ? fmtLong(val) : fmtShort(val);
+      }
+      throw new Error(
+        "val is not a non-empty string or a valid number. val=" + JSON.stringify(val)
+      );
+    };
+    function parse(str) {
+      str = String(str);
+      if (str.length > 100) {
+        return;
+      }
+      var match = /^(-?(?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)?$/i.exec(
+        str
+      );
+      if (!match) {
+        return;
+      }
+      var n = parseFloat(match[1]);
+      var type = (match[2] || "ms").toLowerCase();
+      switch (type) {
+        case "years":
+        case "year":
+        case "yrs":
+        case "yr":
+        case "y":
+          return n * y;
+        case "weeks":
+        case "week":
+        case "w":
+          return n * w;
+        case "days":
+        case "day":
+        case "d":
+          return n * d;
+        case "hours":
+        case "hour":
+        case "hrs":
+        case "hr":
+        case "h":
+          return n * h;
+        case "minutes":
+        case "minute":
+        case "mins":
+        case "min":
+        case "m":
+          return n * m;
+        case "seconds":
+        case "second":
+        case "secs":
+        case "sec":
+        case "s":
+          return n * s;
+        case "milliseconds":
+        case "millisecond":
+        case "msecs":
+        case "msec":
+        case "ms":
+          return n;
+        default:
+          return void 0;
+      }
+    }
+    function fmtShort(ms) {
+      var msAbs = Math.abs(ms);
+      if (msAbs >= d) {
+        return Math.round(ms / d) + "d";
+      }
+      if (msAbs >= h) {
+        return Math.round(ms / h) + "h";
+      }
+      if (msAbs >= m) {
+        return Math.round(ms / m) + "m";
+      }
+      if (msAbs >= s) {
+        return Math.round(ms / s) + "s";
+      }
+      return ms + "ms";
+    }
+    function fmtLong(ms) {
+      var msAbs = Math.abs(ms);
+      if (msAbs >= d) {
+        return plural(ms, msAbs, d, "day");
+      }
+      if (msAbs >= h) {
+        return plural(ms, msAbs, h, "hour");
+      }
+      if (msAbs >= m) {
+        return plural(ms, msAbs, m, "minute");
+      }
+      if (msAbs >= s) {
+        return plural(ms, msAbs, s, "second");
+      }
+      return ms + " ms";
+    }
+    function plural(ms, msAbs, n, name) {
+      var isPlural = msAbs >= n * 1.5;
+      return Math.round(ms / n) + " " + name + (isPlural ? "s" : "");
+    }
+  }
+});
+
+// ../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/common.js
+var require_common = __commonJS({
+  "../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/common.js"(exports2, module2) {
+    function setup(env) {
+      createDebug.debug = createDebug;
+      createDebug.default = createDebug;
+      createDebug.coerce = coerce;
+      createDebug.disable = disable;
+      createDebug.enable = enable;
+      createDebug.enabled = enabled;
+      createDebug.humanize = require_ms();
+      createDebug.destroy = destroy;
+      Object.keys(env).forEach((key) => {
+        createDebug[key] = env[key];
+      });
+      createDebug.names = [];
+      createDebug.skips = [];
+      createDebug.formatters = {};
+      function selectColor(namespace) {
+        let hash = 0;
+        for (let i = 0; i < namespace.length; i++) {
+          hash = (hash << 5) - hash + namespace.charCodeAt(i);
+          hash |= 0;
+        }
+        return createDebug.colors[Math.abs(hash) % createDebug.colors.length];
+      }
+      createDebug.selectColor = selectColor;
+      function createDebug(namespace) {
+        let prevTime;
+        let enableOverride = null;
+        let namespacesCache;
+        let enabledCache;
+        function debug(...args) {
+          if (!debug.enabled) {
+            return;
+          }
+          const self = debug;
+          const curr = Number(/* @__PURE__ */ new Date());
+          const ms = curr - (prevTime || curr);
+          self.diff = ms;
+          self.prev = prevTime;
+          self.curr = curr;
+          prevTime = curr;
+          args[0] = createDebug.coerce(args[0]);
+          if (typeof args[0] !== "string") {
+            args.unshift("%O");
+          }
+          let index = 0;
+          args[0] = args[0].replace(/%([a-zA-Z%])/g, (match, format) => {
+            if (match === "%%") {
+              return "%";
+            }
+            index++;
+            const formatter = createDebug.formatters[format];
+            if (typeof formatter === "function") {
+              const val = args[index];
+              match = formatter.call(self, val);
+              args.splice(index, 1);
+              index--;
+            }
+            return match;
+          });
+          createDebug.formatArgs.call(self, args);
+          const logFn = self.log || createDebug.log;
+          logFn.apply(self, args);
+        }
+        debug.namespace = namespace;
+        debug.useColors = createDebug.useColors();
+        debug.color = createDebug.selectColor(namespace);
+        debug.extend = extend;
+        debug.destroy = createDebug.destroy;
+        Object.defineProperty(debug, "enabled", {
+          enumerable: true,
+          configurable: false,
+          get: () => {
+            if (enableOverride !== null) {
+              return enableOverride;
+            }
+            if (namespacesCache !== createDebug.namespaces) {
+              namespacesCache = createDebug.namespaces;
+              enabledCache = createDebug.enabled(namespace);
+            }
+            return enabledCache;
+          },
+          set: (v) => {
+            enableOverride = v;
+          }
+        });
+        if (typeof createDebug.init === "function") {
+          createDebug.init(debug);
+        }
+        return debug;
+      }
+      function extend(namespace, delimiter) {
+        const newDebug = createDebug(this.namespace + (typeof delimiter === "undefined" ? ":" : delimiter) + namespace);
+        newDebug.log = this.log;
+        return newDebug;
+      }
+      function enable(namespaces) {
+        createDebug.save(namespaces);
+        createDebug.namespaces = namespaces;
+        createDebug.names = [];
+        createDebug.skips = [];
+        const split = (typeof namespaces === "string" ? namespaces : "").trim().replace(/\s+/g, ",").split(",").filter(Boolean);
+        for (const ns of split) {
+          if (ns[0] === "-") {
+            createDebug.skips.push(ns.slice(1));
+          } else {
+            createDebug.names.push(ns);
+          }
+        }
+      }
+      function matchesTemplate(search, template) {
+        let searchIndex = 0;
+        let templateIndex = 0;
+        let starIndex = -1;
+        let matchIndex = 0;
+        while (searchIndex < search.length) {
+          if (templateIndex < template.length && (template[templateIndex] === search[searchIndex] || template[templateIndex] === "*")) {
+            if (template[templateIndex] === "*") {
+              starIndex = templateIndex;
+              matchIndex = searchIndex;
+              templateIndex++;
+            } else {
+              searchIndex++;
+              templateIndex++;
+            }
+          } else if (starIndex !== -1) {
+            templateIndex = starIndex + 1;
+            matchIndex++;
+            searchIndex = matchIndex;
+          } else {
+            return false;
+          }
+        }
+        while (templateIndex < template.length && template[templateIndex] === "*") {
+          templateIndex++;
+        }
+        return templateIndex === template.length;
+      }
+      function disable() {
+        const namespaces = [
+          ...createDebug.names,
+          ...createDebug.skips.map((namespace) => "-" + namespace)
+        ].join(",");
+        createDebug.enable("");
+        return namespaces;
+      }
+      function enabled(name) {
+        for (const skip of createDebug.skips) {
+          if (matchesTemplate(name, skip)) {
+            return false;
+          }
+        }
+        for (const ns of createDebug.names) {
+          if (matchesTemplate(name, ns)) {
+            return true;
+          }
+        }
+        return false;
+      }
+      function coerce(val) {
+        if (val instanceof Error) {
+          return val.stack || val.message;
+        }
+        return val;
+      }
+      function destroy() {
+        console.warn("Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`.");
+      }
+      createDebug.enable(createDebug.load());
+      return createDebug;
+    }
+    module2.exports = setup;
+  }
+});
+
+// ../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/browser.js
+var require_browser = __commonJS({
+  "../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/browser.js"(exports2, module2) {
+    exports2.formatArgs = formatArgs;
+    exports2.save = save;
+    exports2.load = load;
+    exports2.useColors = useColors;
+    exports2.storage = localstorage();
+    exports2.destroy = /* @__PURE__ */ (() => {
+      let warned = false;
+      return () => {
+        if (!warned) {
+          warned = true;
+          console.warn("Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`.");
+        }
+      };
+    })();
+    exports2.colors = [
+      "#0000CC",
+      "#0000FF",
+      "#0033CC",
+      "#0033FF",
+      "#0066CC",
+      "#0066FF",
+      "#0099CC",
+      "#0099FF",
+      "#00CC00",
+      "#00CC33",
+      "#00CC66",
+      "#00CC99",
+      "#00CCCC",
+      "#00CCFF",
+      "#3300CC",
+      "#3300FF",
+      "#3333CC",
+      "#3333FF",
+      "#3366CC",
+      "#3366FF",
+      "#3399CC",
+      "#3399FF",
+      "#33CC00",
+      "#33CC33",
+      "#33CC66",
+      "#33CC99",
+      "#33CCCC",
+      "#33CCFF",
+      "#6600CC",
+      "#6600FF",
+      "#6633CC",
+      "#6633FF",
+      "#66CC00",
+      "#66CC33",
+      "#9900CC",
+      "#9900FF",
+      "#9933CC",
+      "#9933FF",
+      "#99CC00",
+      "#99CC33",
+      "#CC0000",
+      "#CC0033",
+      "#CC0066",
+      "#CC0099",
+      "#CC00CC",
+      "#CC00FF",
+      "#CC3300",
+      "#CC3333",
+      "#CC3366",
+      "#CC3399",
+      "#CC33CC",
+      "#CC33FF",
+      "#CC6600",
+      "#CC6633",
+      "#CC9900",
+      "#CC9933",
+      "#CCCC00",
+      "#CCCC33",
+      "#FF0000",
+      "#FF0033",
+      "#FF0066",
+      "#FF0099",
+      "#FF00CC",
+      "#FF00FF",
+      "#FF3300",
+      "#FF3333",
+      "#FF3366",
+      "#FF3399",
+      "#FF33CC",
+      "#FF33FF",
+      "#FF6600",
+      "#FF6633",
+      "#FF9900",
+      "#FF9933",
+      "#FFCC00",
+      "#FFCC33"
+    ];
+    function useColors() {
+      if (typeof window !== "undefined" && window.process && (window.process.type === "renderer" || window.process.__nwjs)) {
+        return true;
+      }
+      if (typeof navigator !== "undefined" && navigator.userAgent && navigator.userAgent.toLowerCase().match(/(edge|trident)\/(\d+)/)) {
+        return false;
+      }
+      let m;
+      return typeof document !== "undefined" && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance || // Is firebug? http://stackoverflow.com/a/398120/376773
+      typeof window !== "undefined" && window.console && (window.console.firebug || window.console.exception && window.console.table) || // Is firefox >= v31?
+      // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
+      typeof navigator !== "undefined" && navigator.userAgent && (m = navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/)) && parseInt(m[1], 10) >= 31 || // Double check webkit in userAgent just in case we are in a worker
+      typeof navigator !== "undefined" && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/);
+    }
+    function formatArgs(args) {
+      args[0] = (this.useColors ? "%c" : "") + this.namespace + (this.useColors ? " %c" : " ") + args[0] + (this.useColors ? "%c " : " ") + "+" + module2.exports.humanize(this.diff);
+      if (!this.useColors) {
+        return;
+      }
+      const c = "color: " + this.color;
+      args.splice(1, 0, c, "color: inherit");
+      let index = 0;
+      let lastC = 0;
+      args[0].replace(/%[a-zA-Z%]/g, (match) => {
+        if (match === "%%") {
+          return;
+        }
+        index++;
+        if (match === "%c") {
+          lastC = index;
+        }
+      });
+      args.splice(lastC, 0, c);
+    }
+    exports2.log = console.debug || console.log || (() => {
+    });
+    function save(namespaces) {
+      try {
+        if (namespaces) {
+          exports2.storage.setItem("debug", namespaces);
+        } else {
+          exports2.storage.removeItem("debug");
+        }
+      } catch (error) {
+      }
+    }
+    function load() {
+      let r;
+      try {
+        r = exports2.storage.getItem("debug") || exports2.storage.getItem("DEBUG");
+      } catch (error) {
+      }
+      if (!r && typeof process !== "undefined" && "env" in process) {
+        r = process.env.DEBUG;
+      }
+      return r;
+    }
+    function localstorage() {
+      try {
+        return localStorage;
+      } catch (error) {
+      }
+    }
+    module2.exports = require_common()(exports2);
+    var { formatters } = module2.exports;
+    formatters.j = function(v) {
+      try {
+        return JSON.stringify(v);
+      } catch (error) {
+        return "[UnexpectedJSONParseError]: " + error.message;
+      }
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag/index.js
+var require_has_flag = __commonJS({
+  "../../node_modules/.pnpm/has-flag@4.0.0/node_modules/has-flag/index.js"(exports2, module2) {
+    "use strict";
+    module2.exports = (flag, argv = process.argv) => {
+      const prefix = flag.startsWith("-") ? "" : flag.length === 1 ? "-" : "--";
+      const position = argv.indexOf(prefix + flag);
+      const terminatorPosition = argv.indexOf("--");
+      return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color/index.js
+var require_supports_color = __commonJS({
+  "../../node_modules/.pnpm/supports-color@7.2.0/node_modules/supports-color/index.js"(exports2, module2) {
+    "use strict";
+    var os = require("os");
+    var tty = require("tty");
+    var hasFlag = require_has_flag();
+    var { env } = process;
+    var forceColor;
+    if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false") || hasFlag("color=never")) {
+      forceColor = 0;
+    } else if (hasFlag("color") || hasFlag("colors") || hasFlag("color=true") || hasFlag("color=always")) {
+      forceColor = 1;
+    }
+    if ("FORCE_COLOR" in env) {
+      if (env.FORCE_COLOR === "true") {
+        forceColor = 1;
+      } else if (env.FORCE_COLOR === "false") {
+        forceColor = 0;
+      } else {
+        forceColor = env.FORCE_COLOR.length === 0 ? 1 : Math.min(parseInt(env.FORCE_COLOR, 10), 3);
+      }
+    }
+    function translateLevel(level) {
+      if (level === 0) {
+        return false;
+      }
+      return {
+        level,
+        hasBasic: true,
+        has256: level >= 2,
+        has16m: level >= 3
+      };
+    }
+    function supportsColor(haveStream, streamIsTTY) {
+      if (forceColor === 0) {
+        return 0;
+      }
+      if (hasFlag("color=16m") || hasFlag("color=full") || hasFlag("color=truecolor")) {
+        return 3;
+      }
+      if (hasFlag("color=256")) {
+        return 2;
+      }
+      if (haveStream && !streamIsTTY && forceColor === void 0) {
+        return 0;
+      }
+      const min = forceColor || 0;
+      if (env.TERM === "dumb") {
+        return min;
+      }
+      if (process.platform === "win32") {
+        const osRelease = os.release().split(".");
+        if (Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
+          return Number(osRelease[2]) >= 14931 ? 3 : 2;
+        }
+        return 1;
+      }
+      if ("CI" in env) {
+        if (["TRAVIS", "CIRCLECI", "APPVEYOR", "GITLAB_CI", "GITHUB_ACTIONS", "BUILDKITE"].some((sign) => sign in env) || env.CI_NAME === "codeship") {
+          return 1;
+        }
+        return min;
+      }
+      if ("TEAMCITY_VERSION" in env) {
+        return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0;
+      }
+      if (env.COLORTERM === "truecolor") {
+        return 3;
+      }
+      if ("TERM_PROGRAM" in env) {
+        const version = parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
+        switch (env.TERM_PROGRAM) {
+          case "iTerm.app":
+            return version >= 3 ? 3 : 2;
+          case "Apple_Terminal":
+            return 2;
+        }
+      }
+      if (/-256(color)?$/i.test(env.TERM)) {
+        return 2;
+      }
+      if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
+        return 1;
+      }
+      if ("COLORTERM" in env) {
+        return 1;
+      }
+      return min;
+    }
+    function getSupportLevel(stream) {
+      const level = supportsColor(stream, stream && stream.isTTY);
+      return translateLevel(level);
+    }
+    module2.exports = {
+      supportsColor: getSupportLevel,
+      stdout: translateLevel(supportsColor(true, tty.isatty(1))),
+      stderr: translateLevel(supportsColor(true, tty.isatty(2)))
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js
+var require_node = __commonJS({
+  "../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/node.js"(exports2, module2) {
+    var tty = require("tty");
+    var util = require("util");
+    exports2.init = init;
+    exports2.log = log;
+    exports2.formatArgs = formatArgs;
+    exports2.save = save;
+    exports2.load = load;
+    exports2.useColors = useColors;
+    exports2.destroy = util.deprecate(
+      () => {
+      },
+      "Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`."
+    );
+    exports2.colors = [6, 2, 3, 4, 5, 1];
+    try {
+      const supportsColor = require_supports_color();
+      if (supportsColor && (supportsColor.stderr || supportsColor).level >= 2) {
+        exports2.colors = [
+          20,
+          21,
+          26,
+          27,
+          32,
+          33,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          56,
+          57,
+          62,
+          63,
+          68,
+          69,
+          74,
+          75,
+          76,
+          77,
+          78,
+          79,
+          80,
+          81,
+          92,
+          93,
+          98,
+          99,
+          112,
+          113,
+          128,
+          129,
+          134,
+          135,
+          148,
+          149,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          178,
+          179,
+          184,
+          185,
+          196,
+          197,
+          198,
+          199,
+          200,
+          201,
+          202,
+          203,
+          204,
+          205,
+          206,
+          207,
+          208,
+          209,
+          214,
+          215,
+          220,
+          221
+        ];
+      }
+    } catch (error) {
+    }
+    exports2.inspectOpts = Object.keys(process.env).filter((key) => {
+      return /^debug_/i.test(key);
+    }).reduce((obj, key) => {
+      const prop = key.substring(6).toLowerCase().replace(/_([a-z])/g, (_, k) => {
+        return k.toUpperCase();
+      });
+      let val = process.env[key];
+      if (/^(yes|on|true|enabled)$/i.test(val)) {
+        val = true;
+      } else if (/^(no|off|false|disabled)$/i.test(val)) {
+        val = false;
+      } else if (val === "null") {
+        val = null;
+      } else {
+        val = Number(val);
+      }
+      obj[prop] = val;
+      return obj;
+    }, {});
+    function useColors() {
+      return "colors" in exports2.inspectOpts ? Boolean(exports2.inspectOpts.colors) : tty.isatty(process.stderr.fd);
+    }
+    function formatArgs(args) {
+      const { namespace: name, useColors: useColors2 } = this;
+      if (useColors2) {
+        const c = this.color;
+        const colorCode = "\x1B[3" + (c < 8 ? c : "8;5;" + c);
+        const prefix = `  ${colorCode};1m${name} \x1B[0m`;
+        args[0] = prefix + args[0].split("\n").join("\n" + prefix);
+        args.push(colorCode + "m+" + module2.exports.humanize(this.diff) + "\x1B[0m");
+      } else {
+        args[0] = getDate() + name + " " + args[0];
+      }
+    }
+    function getDate() {
+      if (exports2.inspectOpts.hideDate) {
+        return "";
+      }
+      return (/* @__PURE__ */ new Date()).toISOString() + " ";
+    }
+    function log(...args) {
+      return process.stderr.write(util.formatWithOptions(exports2.inspectOpts, ...args) + "\n");
+    }
+    function save(namespaces) {
+      if (namespaces) {
+        process.env.DEBUG = namespaces;
+      } else {
+        delete process.env.DEBUG;
+      }
+    }
+    function load() {
+      return process.env.DEBUG;
+    }
+    function init(debug) {
+      debug.inspectOpts = {};
+      const keys = Object.keys(exports2.inspectOpts);
+      for (let i = 0; i < keys.length; i++) {
+        debug.inspectOpts[keys[i]] = exports2.inspectOpts[keys[i]];
+      }
+    }
+    module2.exports = require_common()(exports2);
+    var { formatters } = module2.exports;
+    formatters.o = function(v) {
+      this.inspectOpts.colors = this.useColors;
+      return util.inspect(v, this.inspectOpts).split("\n").map((str) => str.trim()).join(" ");
+    };
+    formatters.O = function(v) {
+      this.inspectOpts.colors = this.useColors;
+      return util.inspect(v, this.inspectOpts);
+    };
+  }
+});
+
+// ../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/index.js
+var require_src = __commonJS({
+  "../../node_modules/.pnpm/debug@4.4.3/node_modules/debug/src/index.js"(exports2, module2) {
+    if (typeof process === "undefined" || process.type === "renderer" || process.browser === true || process.__nwjs) {
+      module2.exports = require_browser();
+    } else {
+      module2.exports = require_node();
+    }
+  }
+});
+
+// ../../node_modules/.pnpm/follow-redirects@1.15.11/node_modules/follow-redirects/debug.js
 var require_debug = __commonJS({
-  "node_modules/follow-redirects/debug.js"(exports2, module2) {
+  "../../node_modules/.pnpm/follow-redirects@1.15.11/node_modules/follow-redirects/debug.js"(exports2, module2) {
     var debug;
     module2.exports = function() {
       if (!debug) {
         try {
-          debug = require("debug")("follow-redirects");
+          debug = require_src()("follow-redirects");
         } catch (error) {
         }
         if (typeof debug !== "function") {
@@ -692,9 +1455,9 @@ var require_debug = __commonJS({
   }
 });
 
-// node_modules/follow-redirects/index.js
+// ../../node_modules/.pnpm/follow-redirects@1.15.11/node_modules/follow-redirects/index.js
 var require_follow_redirects = __commonJS({
-  "node_modules/follow-redirects/index.js"(exports2, module2) {
+  "../../node_modules/.pnpm/follow-redirects@1.15.11/node_modules/follow-redirects/index.js"(exports2, module2) {
     var url = require("url");
     var URL = url.URL;
     var http = require("http");
@@ -1188,9 +1951,9 @@ var require_follow_redirects = __commonJS({
   }
 });
 
-// node_modules/axios/package.json
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/package.json
 var require_package = __commonJS({
-  "node_modules/axios/package.json"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/package.json"(exports2, module2) {
     module2.exports = {
       name: "axios",
       version: "0.21.4",
@@ -1278,9 +2041,9 @@ var require_package = __commonJS({
   }
 });
 
-// node_modules/axios/lib/adapters/http.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/adapters/http.js
 var require_http = __commonJS({
-  "node_modules/axios/lib/adapters/http.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/adapters/http.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     var settle = require_settle();
@@ -1538,9 +2301,9 @@ var require_http = __commonJS({
   }
 });
 
-// node_modules/axios/lib/defaults.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/defaults.js
 var require_defaults = __commonJS({
-  "node_modules/axios/lib/defaults.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/defaults.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     var normalizeHeaderName = require_normalizeHeaderName();
@@ -1648,9 +2411,9 @@ var require_defaults = __commonJS({
   }
 });
 
-// node_modules/axios/lib/core/transformData.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/transformData.js
 var require_transformData = __commonJS({
-  "node_modules/axios/lib/core/transformData.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/transformData.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     var defaults = require_defaults();
@@ -1664,9 +2427,9 @@ var require_transformData = __commonJS({
   }
 });
 
-// node_modules/axios/lib/cancel/isCancel.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/cancel/isCancel.js
 var require_isCancel = __commonJS({
-  "node_modules/axios/lib/cancel/isCancel.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/cancel/isCancel.js"(exports2, module2) {
     "use strict";
     module2.exports = function isCancel(value) {
       return !!(value && value.__CANCEL__);
@@ -1674,9 +2437,9 @@ var require_isCancel = __commonJS({
   }
 });
 
-// node_modules/axios/lib/core/dispatchRequest.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/dispatchRequest.js
 var require_dispatchRequest = __commonJS({
-  "node_modules/axios/lib/core/dispatchRequest.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/dispatchRequest.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     var transformData = require_transformData();
@@ -1735,9 +2498,9 @@ var require_dispatchRequest = __commonJS({
   }
 });
 
-// node_modules/axios/lib/core/mergeConfig.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/mergeConfig.js
 var require_mergeConfig = __commonJS({
-  "node_modules/axios/lib/core/mergeConfig.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/mergeConfig.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     module2.exports = function mergeConfig(config1, config2) {
@@ -1818,9 +2581,9 @@ var require_mergeConfig = __commonJS({
   }
 });
 
-// node_modules/axios/lib/helpers/validator.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/validator.js
 var require_validator = __commonJS({
-  "node_modules/axios/lib/helpers/validator.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/validator.js"(exports2, module2) {
     "use strict";
     var pkg = require_package();
     var validators = {};
@@ -1894,9 +2657,9 @@ var require_validator = __commonJS({
   }
 });
 
-// node_modules/axios/lib/core/Axios.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/Axios.js
 var require_Axios = __commonJS({
-  "node_modules/axios/lib/core/Axios.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/core/Axios.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     var buildURL = require_buildURL();
@@ -2006,9 +2769,9 @@ var require_Axios = __commonJS({
   }
 });
 
-// node_modules/axios/lib/cancel/Cancel.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/cancel/Cancel.js
 var require_Cancel = __commonJS({
-  "node_modules/axios/lib/cancel/Cancel.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/cancel/Cancel.js"(exports2, module2) {
     "use strict";
     function Cancel(message) {
       this.message = message;
@@ -2021,9 +2784,9 @@ var require_Cancel = __commonJS({
   }
 });
 
-// node_modules/axios/lib/cancel/CancelToken.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/cancel/CancelToken.js
 var require_CancelToken = __commonJS({
-  "node_modules/axios/lib/cancel/CancelToken.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/cancel/CancelToken.js"(exports2, module2) {
     "use strict";
     var Cancel = require_Cancel();
     function CancelToken(executor) {
@@ -2062,9 +2825,9 @@ var require_CancelToken = __commonJS({
   }
 });
 
-// node_modules/axios/lib/helpers/spread.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/spread.js
 var require_spread = __commonJS({
-  "node_modules/axios/lib/helpers/spread.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/spread.js"(exports2, module2) {
     "use strict";
     module2.exports = function spread(callback) {
       return function wrap(arr) {
@@ -2074,9 +2837,9 @@ var require_spread = __commonJS({
   }
 });
 
-// node_modules/axios/lib/helpers/isAxiosError.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/isAxiosError.js
 var require_isAxiosError = __commonJS({
-  "node_modules/axios/lib/helpers/isAxiosError.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/helpers/isAxiosError.js"(exports2, module2) {
     "use strict";
     module2.exports = function isAxiosError(payload) {
       return typeof payload === "object" && payload.isAxiosError === true;
@@ -2084,9 +2847,9 @@ var require_isAxiosError = __commonJS({
   }
 });
 
-// node_modules/axios/lib/axios.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/axios.js
 var require_axios = __commonJS({
-  "node_modules/axios/lib/axios.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/lib/axios.js"(exports2, module2) {
     "use strict";
     var utils = require_utils();
     var bind = require_bind();
@@ -2118,16 +2881,16 @@ var require_axios = __commonJS({
   }
 });
 
-// node_modules/axios/index.js
+// ../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/index.js
 var require_axios2 = __commonJS({
-  "node_modules/axios/index.js"(exports2, module2) {
+  "../../node_modules/.pnpm/axios@0.21.4/node_modules/axios/index.js"(exports2, module2) {
     module2.exports = require_axios();
   }
 });
 
-// node_modules/youtube-search-api/index.js
+// ../../node_modules/.pnpm/youtube-search-api@1.2.2/node_modules/youtube-search-api/index.js
 var require_youtube_search_api = __commonJS({
-  "node_modules/youtube-search-api/index.js"(exports2) {
+  "../../node_modules/.pnpm/youtube-search-api@1.2.2/node_modules/youtube-search-api/index.js"(exports2) {
     var axios = require_axios2();
     var youtubeEndpoint = `https://www.youtube.com`;
     var GetYoutubeInitData = async (url) => {
@@ -2563,7 +3326,8 @@ var YoutubeVideoEntity = (0, import_entity_sdk.defineEntity)({
       { key: "channel", label: "Channel", metadataPath: "channelTitle", format: "string" },
       { key: "publishedAt", label: "Published", metadataPath: "publishedAt", format: "date" },
       { key: "watchUrl", label: "Watch URL", metadataPath: "watchUrl", format: "string" }
-    ]
+    ],
+    showInPalette: false
   },
   cache: {
     ttl: 3e5,

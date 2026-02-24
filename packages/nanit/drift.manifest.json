@@ -1,9 +1,14 @@
 {
   "$schema": "https://registry.drift.dev/manifest/v1.json",
   "name": "nanit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "displayName": "Nanit",
-  "description": "Live baby camera stream from Nanit",
+  "description": "Live baby camera stream from Nanit — widget cards with auto-detaching PiP player",
+
+  "graphql": {
+    "schema": "schema.graphql",
+    "resolvers": "resolvers.ts"
+  },
 
   "canvases": {
     "nav-sidebar": {
@@ -16,6 +21,24 @@
       "component": "components/Drawer.tsx",
       "label": "Nanit Camera",
       "icon": "baby"
+    },
+    "entity-widget": {
+      "component": "components/CamWidget.tsx",
+      "entityType": "nanit_cam"
+    },
+    "floating-widget": {
+      "component": "components/CamFloatingWidget.tsx",
+      "entityType": "nanit_cam",
+      "autoDetach": true
+    },
+    "entity-drawer": {
+      "component": "components/CamEntityDrawer.tsx",
+      "entityType": "nanit_cam"
+    },
+    "feed-card": {
+      "component": "components/NanitFeedCard.tsx",
+      "entityType": "nanit_cam",
+      "defaultSize": "medium"
     }
   }
 }

@@ -94,12 +94,30 @@ interface DrawerProps {
   pluginId: string;
 }
 
+// ─── IPC Fetch Helper ─────────────────────────────────────────────────────────
+// All requests to nanit media servers go through Electron's main process via IPC
+// to bypass CORS restrictions (renderer runs on localhost in dev mode).
+
+async function ipcFetch(url: string, options?: { method?: string; headers?: Record<string, string>; body?: string }): Promise<{
+  ok: boolean; status: number; statusText: string; headers: Record<string, string>; body: string; // base64
+}> {
+  // @ts-ignore window.electron exists in Drift's preload
+  return window.electron.invoke('drift:fetch', {
+    url,
+    method: options?.method || 'GET',
+    headers: options?.headers,
+    body: options?.body,
+  });
+}
+
 // ─── HLS Player ───────────────────────────────────────────────────────────────
 
 function HlsPlayer({ accessToken, onReauth }: { accessToken: string; onReauth: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [playerError, setPlayerError] = useState<string | null>(null);
+  // Store baby_token in a ref so the HLS loader can access it
+  const babyTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -113,13 +131,10 @@ function HlsPlayer({ accessToken, onReauth }: { accessToken: string; onReauth: (
         return;
       }
 
-      // Step 1: call /babies/{uid}/tokens with authorization: token <accessToken>
-      // Response body contains the baby_token value needed as a cookie for HLS.
-      logger.info('Nanit: calling /tokens with access token...');
-      let babyToken: string | null = null;
+      // Step 1: call /babies/{uid}/tokens via IPC to get baby_token
+      logger.info('Nanit: calling /tokens with access token via IPC...');
       try {
-        const tokResp = await fetch(TOKENS_URL, {
-          method: 'GET',
+        const tokResp = await ipcFetch(TOKENS_URL, {
           headers: {
             'accept': '*/*',
             'authorization': `token ${accessToken}`,
@@ -127,19 +142,19 @@ function HlsPlayer({ accessToken, onReauth }: { accessToken: string; onReauth: (
             'referer': 'https://my.nanit.com/',
           },
         });
-        logger.info('Nanit: /tokens', { status: tokResp.status });
+        logger.info('Nanit: /tokens', { status: tokResp.status, ok: tokResp.ok });
         if (tokResp.ok) {
-          const buf = await tokResp.arrayBuffer();
-          const text = new TextDecoder().decode(buf);
-          logger.info('Nanit: /tokens body', { len: text.length, preview: text.slice(0, 100), isJwt: text.startsWith('eyJ') });
-          const jwtMatch = text.match(/(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)/);
+          // Body is base64-encoded from the IPC handler
+          const raw = atob(tokResp.body);
+          logger.info('Nanit: /tokens body', { len: raw.length, preview: raw.slice(0, 100), isJwt: raw.startsWith('eyJ') });
+          const jwtMatch = raw.match(/(eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)/);
           if (jwtMatch) {
-            babyToken = jwtMatch[1];
+            babyTokenRef.current = jwtMatch[1];
           } else {
-            // Raw binary — base64 encode as fallback
-            babyToken = btoa(String.fromCharCode(...new Uint8Array(buf)));
+            // Use raw base64 as the token value
+            babyTokenRef.current = tokResp.body;
           }
-          logger.info('Nanit: baby_token extracted', { len: babyToken.length, preview: babyToken.slice(0, 50) });
+          logger.info('Nanit: baby_token extracted', { len: babyTokenRef.current.length, preview: babyTokenRef.current.slice(0, 50) });
         }
       } catch (e) {
         logger.warn('Nanit: /tokens error', { err: String(e) });
@@ -147,38 +162,19 @@ function HlsPlayer({ accessToken, onReauth }: { accessToken: string; onReauth: (
 
       if (cancelled) return;
 
-      // Step 2: Set baby_token as a cookie in Electron's session via IPC.
-      // fetch() blocks the Cookie header (forbidden), but if we set the cookie
-      // in Electron's cookie jar, credentials:'include' will send it automatically.
-      if (babyToken) {
-        try {
-          // @ts-ignore window.electron exists in Drift's preload
-          await window.electron.invoke('drift:set-cookie', {
-            url: 'https://media-web-secured.nanit.com',
-            name: 'baby_token',
-            value: babyToken,
-            domain: '.nanit.com',
-            path: '/',
-            httpOnly: true,
-            secure: true,
-            expirationDate: Math.floor(Date.now() / 1000) + 86400,
-          });
-          logger.info('Nanit: baby_token cookie set via IPC');
-        } catch (e) {
-          logger.error('Nanit: failed to set cookie via IPC', { err: String(e) });
-        }
-      }
-
-      if (cancelled) return;
-
-      // Step 3: test manifest with credentials:'include' (cookie should be sent by Electron)
+      // Step 2: test manifest via IPC (send baby_token as cookie header)
       let manifestOk = false;
       try {
-        const diagResp = await fetch(STREAM_URL, {
-          credentials: 'include',
-          headers: { 'accept': '*/*', 'origin': 'https://my.nanit.com', 'referer': 'https://my.nanit.com/' },
-        });
-        const diagBody = await diagResp.text();
+        const headers: Record<string, string> = {
+          'accept': '*/*',
+          'origin': 'https://my.nanit.com',
+          'referer': 'https://my.nanit.com/',
+        };
+        if (babyTokenRef.current) {
+          headers['cookie'] = `baby_token=${babyTokenRef.current}`;
+        }
+        const diagResp = await ipcFetch(STREAM_URL, { headers });
+        const diagBody = atob(diagResp.body);
         logger.info('Nanit: manifest test', { status: diagResp.status, bodyLen: diagBody.length, preview: diagBody.slice(0, 300) });
         manifestOk = diagResp.ok && diagBody.includes('#EXTM3U');
       } catch (e) {
@@ -192,11 +188,13 @@ function HlsPlayer({ accessToken, onReauth }: { accessToken: string; onReauth: (
         return;
       }
 
-      // Step 4: start hls.js with credentials:'include' loader
-      logger.info('Nanit: starting hls.js...');
+      // Step 3: start hls.js with IPC-based loader (bypasses CORS entirely)
+      logger.info('Nanit: starting hls.js with IPC loader...');
+
+      const savedBabyToken = babyTokenRef.current;
 
       class NanitLoader {
-        private controller = new AbortController();
+        private aborted = false;
         private stats = {
           aborted: false, loaded: 0, total: 0, retry: 0, chunkCount: 0, bwEstimate: 0,
           loading: { start: 0, first: 0, end: 0 },
@@ -214,35 +212,63 @@ function HlsPlayer({ accessToken, onReauth }: { accessToken: string; onReauth: (
         ) {
           const url = context.url;
           const isManifest = url.includes('.m3u8');
+          const headers: Record<string, string> = {
+            'accept': '*/*',
+            'origin': 'https://my.nanit.com',
+            'referer': 'https://my.nanit.com/',
+          };
+          if (savedBabyToken) {
+            headers['cookie'] = `baby_token=${savedBabyToken}`;
+          }
 
-          fetch(url, {
-            credentials: 'include',
-            headers: { 'accept': '*/*', 'origin': 'https://my.nanit.com', 'referer': 'https://my.nanit.com/' },
-            signal: this.controller.signal,
-          })
-            .then(async resp => {
+          this.stats.loading.start = performance.now();
+
+          ipcFetch(url, { headers })
+            .then(resp => {
+              if (this.aborted) return;
+              this.stats.loading.first = performance.now();
+              this.stats.loading.end = performance.now();
+
               if (!resp.ok) {
                 callbacks.onError({ code: resp.status, text: resp.statusText }, context, null, this.stats);
                 return;
               }
-              const data = isManifest ? await resp.text() : await resp.arrayBuffer();
-              this.stats.loaded = typeof data === 'string' ? data.length : (data as ArrayBuffer).byteLength;
-              callbacks.onSuccess({ data, url: resp.url }, this.stats, context, null);
+
+              if (isManifest) {
+                const text = atob(resp.body);
+                this.stats.loaded = text.length;
+                callbacks.onSuccess({ data: text, url }, this.stats, context, null);
+              } else {
+                // Convert base64 to ArrayBuffer for binary segments
+                const binary = atob(resp.body);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                this.stats.loaded = bytes.byteLength;
+                callbacks.onSuccess({ data: bytes.buffer, url }, this.stats, context, null);
+              }
             })
             .catch(err => {
-              if (err.name !== 'AbortError') {
+              if (!this.aborted) {
                 callbacks.onError({ code: 0, text: String(err) }, context, null, this.stats);
               }
             });
         }
 
-        abort() { this.controller.abort(); }
-        destroy() { this.controller.abort(); }
+        abort() { this.aborted = true; }
+        destroy() { this.aborted = true; }
         getCacheAge() { return null; }
         getResponseHeader() { return null; }
       }
 
-      const hls = new Hls({ loader: NanitLoader as unknown as typeof Hls.prototype.config.loader });
+      const hls = new Hls({
+        loader: NanitLoader as unknown as typeof Hls.prototype.config.loader,
+        liveSyncDurationCount: 1,
+        liveMaxLatencyDurationCount: 3,
+        liveDurationInfinity: true,
+        highBufferWatchdogPeriod: 1,
+        maxBufferLength: 5,
+        maxMaxBufferLength: 10,
+      });
       hlsRef.current = hls;
 
       hls.on(Hls.Events.ERROR, (_evt, data) => {
@@ -254,7 +280,12 @@ function HlsPlayer({ accessToken, onReauth }: { accessToken: string; onReauth: (
 
       hls.loadSource(STREAM_URL);
       hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); });
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (hls.liveSyncPosition) {
+          video.currentTime = hls.liveSyncPosition;
+        }
+        video.play().catch(() => {});
+      });
     }
 
     startStream();
