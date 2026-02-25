@@ -1,25 +1,27 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export interface GmailSettings {
-  labelId: string;
-  readFilter: 'all' | 'unread' | 'read';
-  groupBy: 'none' | 'label' | 'date' | 'sender';
-  maxResults: number;
-  refreshInterval: number;
+export interface SentrySettings {
+  /** Default search query */
+  query: string;
+  /** Sort order */
+  sort: 'date' | 'new' | 'freq' | 'user';
+  /** Stats period */
+  statsPeriod: string;
+  /** Max items per section */
+  limit: number;
 }
 
-export const DEFAULT_SETTINGS: GmailSettings = {
-  labelId: 'INBOX',
-  readFilter: 'all',
-  groupBy: 'none',
-  maxResults: 20,
-  refreshInterval: 300_000, // 5 minutes
+export const DEFAULT_SETTINGS: SentrySettings = {
+  query: 'is:unresolved',
+  sort: 'date',
+  statsPeriod: '14d',
+  limit: 15,
 };
 
-const STORAGE_KEY = 'drift-plugin:gmail-example:settings';
-const SYNC_EVENT = 'drift-gmail-settings-change';
+const STORAGE_KEY = 'drift-plugin:sentry:settings';
+const SYNC_EVENT = 'drift-sentry-settings-change';
 
-function readSettings(): GmailSettings {
+function readSettings(): SentrySettings {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -31,7 +33,7 @@ function readSettings(): GmailSettings {
   return { ...DEFAULT_SETTINGS };
 }
 
-function writeSettings(settings: GmailSettings): void {
+function writeSettings(settings: SentrySettings): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   } catch {
@@ -40,13 +42,12 @@ function writeSettings(settings: GmailSettings): void {
 }
 
 /**
- * Shared hook for Gmail plugin settings.
+ * Shared hook for Sentry plugin settings.
  * Uses localStorage + CustomEvent to sync across React trees.
  */
-export function useGmailSettings(): [GmailSettings, (update: Partial<GmailSettings>) => void] {
-  const [settings, setSettings] = useState<GmailSettings>(readSettings);
+export function useSentrySettings(): [SentrySettings, (update: Partial<SentrySettings>) => void] {
+  const [settings, setSettings] = useState<SentrySettings>(readSettings);
 
-  // Listen for changes from other components
   useEffect(() => {
     const handler = () => {
       setSettings(readSettings());
@@ -55,7 +56,7 @@ export function useGmailSettings(): [GmailSettings, (update: Partial<GmailSettin
     return () => window.removeEventListener(SYNC_EVENT, handler);
   }, []);
 
-  const updateSettings = useCallback((update: Partial<GmailSettings>) => {
+  const updateSettings = useCallback((update: Partial<SentrySettings>) => {
     setSettings((prev) => {
       const next = { ...prev, ...update };
       writeSettings(next);

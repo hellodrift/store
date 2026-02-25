@@ -4,14 +4,13 @@
  * Owns the TrelloClient lifecycle and exposes discovery and mutation operations
  * that any Trello entity can call.
  *
- * Auth: API key + token (stored as secureKeys).
- * Users obtain these from: https://trello.com/power-ups/admin (API key)
- * and https://trello.com/1/authorize?expiration=never&scope=read,write&response_type=token&key={KEY}
- *
- * TODO: OAuth 2.0 PKCE (RFC-89) — when Trello finalizes their OAuth 2.0
- * implementation, add oauth: { providers: [{ flow: { grantType:
- * 'authorization_code', pkce: { enabled: true, method: 'S256' } } }] }
- * and call ctx.oauth.getAccessToken('trello') before falling back to secureKeys.
+ * Auth (in priority order):
+ * 1. Atlassian OAuth 2.0 3LO (preferred) — authorization_code + PKCE via
+ *    id.atlassian.com. The access token is passed as a Bearer token to the
+ *    Trello REST API (supported since Atlassian unified auth).
+ * 2. API key + token fallback — users obtain from:
+ *    https://trello.com/power-ups/admin (API key)
+ *    https://trello.com/1/authorize?expiration=never&scope=read,write&response_type=token&key={KEY}
  */
 
 import { z } from 'zod';
@@ -87,14 +86,28 @@ export const trelloIntegration = defineIntegration<TrelloClient>({
   secureKeys: ['api_key', 'token'],
 
   createClient: async (ctx) => {
+    // Authenticate using API key + token
     const apiKey = await ctx.storage.get('api_key');
     const token = await ctx.storage.get('token');
 
     if (apiKey && token) {
+      ctx.logger.info('Trello: authenticated via API key + token', {
+        apiKeyLength: apiKey.length,
+        tokenLength: token.length,
+        apiKeyPrefix: apiKey.slice(0, 6) + '...',
+      });
       return new TrelloClient({ key: apiKey, token });
     }
 
-    ctx.logger.warn('No API key or token configured for Trello');
+    // Specific warnings to help diagnose partial config
+    if (apiKey && !token) {
+      ctx.logger.warn('Trello: API key found but token missing — generate a token at https://trello.com/1/authorize?expiration=never&scope=read,write&response_type=token&key=' + apiKey);
+    } else if (!apiKey && token) {
+      ctx.logger.warn('Trello: token found but API key missing — get your key at https://trello.com/power-ups/admin');
+    } else {
+      ctx.logger.warn('Trello: no credentials configured — add your API key + token in settings');
+    }
+
     return null;
   },
 

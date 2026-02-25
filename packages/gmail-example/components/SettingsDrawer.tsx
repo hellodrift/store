@@ -45,6 +45,14 @@ const GROUP_BY_OPTIONS: { value: GmailSettings['groupBy']; label: string }[] = [
 
 const MAX_RESULTS_OPTIONS = [10, 20, 50];
 
+const REFRESH_INTERVAL_OPTIONS: { value: number; label: string }[] = [
+  { value: 60_000, label: '1 minute' },
+  { value: 300_000, label: '5 minutes' },
+  { value: 600_000, label: '10 minutes' },
+  { value: 900_000, label: '15 minutes' },
+  { value: 1_800_000, label: '30 minutes' },
+];
+
 // System labels to show at top
 const SYSTEM_LABELS = ['INBOX', 'STARRED', 'SENT', 'DRAFT', 'TRASH', 'SPAM'];
 
@@ -168,6 +176,27 @@ export default function SettingsDrawer({ drawer }: SettingsDrawerProps) {
               {MAX_RESULTS_OPTIONS.map((n) => (
                 <SelectItem key={n} value={String(n)}>
                   {n} messages
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </ContentSection>
+
+        <Separator />
+
+        {/* Refresh Interval */}
+        <ContentSection title="Refresh interval">
+          <Select
+            value={String(settings.refreshInterval)}
+            onValueChange={(value) => updateSettings({ refreshInterval: Number(value) })}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {REFRESH_INTERVAL_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={String(opt.value)}>
+                  {opt.label}
                 </SelectItem>
               ))}
             </SelectContent>

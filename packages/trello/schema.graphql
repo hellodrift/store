@@ -108,6 +108,7 @@ extend type Query {
   trelloCard(id: ID!): TrelloCard
   trelloCards(query: String, boardId: ID, listId: ID, limit: Int): [TrelloCard!]!
   trelloMyCards(limit: Int): [TrelloCard!]!
+  trelloNavCards(boardIds: [ID!], showAll: Boolean, limit: Int): [TrelloCard!]!
   trelloBoardCards(boardId: ID!, listId: ID, limit: Int): [TrelloCard!]!
   trelloBoard(id: ID!): TrelloBoard
   trelloBoards(filter: String): [TrelloBoard!]!

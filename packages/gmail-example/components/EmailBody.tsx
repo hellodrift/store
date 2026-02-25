@@ -144,6 +144,12 @@ function sanitizeHtml(html: string): SanitizeResult {
         continue; // don't set src
       }
 
+      // Drop unresolved cid: references (inline images not substituted server-side)
+      if (name === 'src' && tagName === 'img' && /^cid:/i.test(value.trim())) {
+        clean.setAttribute('alt', element.getAttribute('alt') || '[inline image]');
+        continue; // skip — browser cannot resolve cid: URIs
+      }
+
       clean.setAttribute(name, value);
     }
 

@@ -22,6 +22,13 @@ import EmailBody from './EmailBody';
 // Types
 // ────────────────────────────────────────────────────────────────────────────
 
+export interface GmailAttachment {
+  attachmentId: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+
 export interface GmailMsg {
   id: string;
   title: string;
@@ -41,6 +48,7 @@ export interface GmailMsg {
   bodyText?: string;
   bodyHtml?: string;
   hasAttachments?: boolean;
+  attachments?: GmailAttachment[];
   url?: string;
 }
 
@@ -78,6 +86,7 @@ export interface ThreadDrawerContentProps {
   onTrash?: () => void;
   onReply?: (body: string, replyAll?: boolean) => void;
   onModifyLabels?: (addLabelIds?: string[], removeLabelIds?: string[]) => void;
+  onDownloadAttachment?: (attachmentId: string, filename: string, mimeType: string) => void;
   error?: string | null;
   onDismissError?: () => void;
   // Workstream linking
@@ -125,6 +134,25 @@ function extractSenderName(from?: string): string {
   return from;
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getFileIcon(mimeType: string): string {
+  if (mimeType.startsWith('image/')) return '🖼';
+  if (mimeType.startsWith('video/')) return '🎬';
+  if (mimeType.startsWith('audio/')) return '🎵';
+  if (mimeType === 'application/pdf') return '📄';
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('.sheet')) return '📊';
+  if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return '📊';
+  if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
+  if (mimeType.includes('zip') || mimeType.includes('compressed') || mimeType.includes('archive')) return '📦';
+  return '📎';
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Component
 // ────────────────────────────────────────────────────────────────────────────
@@ -139,6 +167,7 @@ export default function ThreadDrawerContent({
   onTrash,
   onReply,
   onModifyLabels,
+  onDownloadAttachment,
   error,
   onDismissError,
   entityUri,
@@ -342,9 +371,63 @@ export default function ThreadDrawerContent({
                 </div>
               </PropertyRow>
             )}
-            {message.hasAttachments && (
+            {message.attachments && message.attachments.length > 0 && (
               <PropertyRow label="Attach">
-                <span style={{ fontSize: 12 }}>Has attachments</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {message.attachments.map((attachment) => (
+                    <div
+                      key={attachment.attachmentId}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '4px 6px',
+                        borderRadius: 4,
+                        background: 'var(--surface-subtle)',
+                        border: '1px solid var(--border-muted)',
+                      }}
+                    >
+                      <span style={{ fontSize: 13, flexShrink: 0 }}>{getFileIcon(attachment.mimeType)}</span>
+                      <span
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          fontSize: 11,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          color: 'var(--text-primary)',
+                        }}
+                        title={attachment.filename}
+                      >
+                        {attachment.filename}
+                      </span>
+                      <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>
+                        {formatFileSize(attachment.size)}
+                      </span>
+                      {onDownloadAttachment && (
+                        <button
+                          type="button"
+                          onClick={() => onDownloadAttachment(attachment.attachmentId, attachment.filename, attachment.mimeType)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '2px 4px',
+                            borderRadius: 3,
+                            color: 'var(--text-link, #1A73E8)',
+                            fontSize: 10,
+                            fontWeight: 500,
+                            flexShrink: 0,
+                          }}
+                          title={`Download ${attachment.filename}`}
+                        >
+                          ↓
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </PropertyRow>
             )}
           </div>

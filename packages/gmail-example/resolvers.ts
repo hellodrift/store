@@ -57,6 +57,7 @@ interface GmailClient {
   }): Promise<{ messages: Array<{ id: string; threadId: string }>; nextPageToken?: string; resultSizeEstimate?: number }>;
   getMessage(id: string, format?: 'full' | 'metadata' | 'minimal'): Promise<GmailApiRawMessage>;
   getThread(id: string): Promise<{ id: string; snippet?: string; messages: GmailApiRawMessage[] }>;
+  getAttachment(messageId: string, attachmentId: string): Promise<{ data: string; size: number }>;
   modifyMessage(id: string, addLabelIds?: string[], removeLabelIds?: string[]): Promise<GmailApiRawMessage>;
   trashMessage(id: string): Promise<GmailApiRawMessage>;
   untrashMessage(id: string): Promise<GmailApiRawMessage>;
@@ -84,6 +85,18 @@ interface GmailResolverContext {
 
 // ---------- GraphQL result types ----------
 
+interface GmailAttachmentGql {
+  attachmentId: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+
+interface GmailAttachmentDataGql {
+  attachmentId: string;
+  data: string;
+}
+
 interface GmailMessageGql {
   id: string;
   type: string;
@@ -105,6 +118,7 @@ interface GmailMessageGql {
   bodyText: string | null;
   bodyHtml: string | null;
   hasAttachments: boolean;
+  attachments: GmailAttachmentGql[];
   url: string;
 }
 
@@ -162,6 +176,14 @@ function extractHeaders(headers?: GmailApiHeader[]): Record<string, string> {
   return result;
 }
 
+function getContentId(headers?: GmailApiHeader[]): string | undefined {
+  if (!headers) return undefined;
+  const cidHeader = headers.find((h) => h.name.toLowerCase() === 'content-id');
+  if (!cidHeader?.value) return undefined;
+  // Strip angle brackets: <image001@domain.com> → image001@domain.com
+  return cidHeader.value.replace(/^<|>$/g, '');
+}
+
 function extractBody(payload?: GmailApiPayload): { text: string; html?: string } {
   if (!payload) return { text: '' };
 
@@ -176,6 +198,8 @@ function extractBody(payload?: GmailApiPayload): { text: string; html?: string }
   if (payload.parts) {
     let text = '';
     let html: string | undefined;
+    // CID → data URI map for inline images already embedded in the message body
+    const cidMap: Record<string, string> = {};
 
     const walk = (parts: GmailApiPart[]) => {
       for (const part of parts) {
@@ -185,6 +209,14 @@ function extractBody(payload?: GmailApiPayload): { text: string; html?: string }
           html = Buffer.from(part.body.data, 'base64').toString('utf-8');
         } else if (part.mimeType?.startsWith('multipart/') && part.parts) {
           walk(part.parts);
+        } else if (part.mimeType?.startsWith('image/') && part.body?.data) {
+          // Inline image with data already present — build CID mapping.
+          // Gmail uses URL-safe base64; data URIs need standard base64.
+          const cid = getContentId(part.headers);
+          if (cid) {
+            const standardB64 = part.body.data.replace(/-/g, '+').replace(/_/g, '/');
+            cidMap[cid] = `data:${part.mimeType};base64,${standardB64}`;
+          }
         }
       }
     };
@@ -193,6 +225,15 @@ function extractBody(payload?: GmailApiPayload): { text: string; html?: string }
     if (!text && html) {
       text = htmlToText(html);
     }
+
+    // Replace cid: references in HTML with data URIs where available
+    if (html && Object.keys(cidMap).length > 0) {
+      html = html.replace(/src="cid:([^"]+)"/gi, (_match, cid) => {
+        const dataUri = cidMap[cid as string];
+        return dataUri ? `src="${dataUri}"` : `src="cid:${cid}"`;
+      });
+    }
+
     return { text, html };
   }
 
@@ -214,10 +255,36 @@ function htmlToText(html: string): string {
 }
 
 function checkHasAttachments(payload?: GmailApiPayload): boolean {
-  if (!payload?.parts) return false;
-  return payload.parts.some(
-    (part) => part.filename && part.filename.length > 0 && part.body?.attachmentId,
-  );
+  if (!payload) return false;
+  const check = (parts?: GmailApiPart[]): boolean => {
+    if (!parts) return false;
+    return parts.some((part) => {
+      if (part.filename && part.filename.length > 0 && part.body?.attachmentId) return true;
+      return check(part.parts);
+    });
+  };
+  return check(payload.parts);
+}
+
+function collectAttachmentParts(payload?: GmailApiPayload): GmailAttachmentGql[] {
+  const result: GmailAttachmentGql[] = [];
+  if (!payload) return result;
+  const walk = (parts?: GmailApiPart[]) => {
+    if (!parts) return;
+    for (const part of parts) {
+      if (part.filename && part.filename.length > 0 && part.body?.attachmentId) {
+        result.push({
+          attachmentId: part.body.attachmentId,
+          filename: part.filename,
+          mimeType: part.mimeType ?? 'application/octet-stream',
+          size: part.body.size ?? 0,
+        });
+      }
+      if (part.parts) walk(part.parts);
+    }
+  };
+  walk(payload.parts);
+  return result;
 }
 
 function buildRfc2822Message(params: {
@@ -256,6 +323,66 @@ function getErrorMessage(err: unknown): string {
   return String(err);
 }
 
+/**
+ * Fetch inline images that extractBody couldn't resolve because Gmail stored
+ * them by attachmentId only (parts larger than the inline size threshold).
+ * Returns the HTML with any remaining cid: references substituted.
+ */
+async function resolveRemoteInlineImages(
+  html: string,
+  payload: GmailApiPayload | undefined,
+  messageId: string,
+  client: GmailClient,
+): Promise<string> {
+  // Collect all still-unresolved cid: references
+  const cidRefs = new Set<string>();
+  const cidPattern = /src="cid:([^"]+)"/gi;
+  let m: RegExpExecArray | null;
+  while ((m = cidPattern.exec(html)) !== null) {
+    cidRefs.add(m[1]);
+  }
+  if (cidRefs.size === 0) return html;
+
+  // Build cid → { attachmentId, mimeType } map from MIME parts
+  const cidMeta: Record<string, { attachmentId: string; mimeType: string }> = {};
+  const walkForCid = (parts?: GmailApiPart[]) => {
+    if (!parts) return;
+    for (const part of parts) {
+      if (part.mimeType?.startsWith('image/') && part.body?.attachmentId) {
+        const cid = getContentId(part.headers);
+        if (cid && cidRefs.has(cid)) {
+          cidMeta[cid] = { attachmentId: part.body.attachmentId, mimeType: part.mimeType };
+        }
+      }
+      if (part.parts) walkForCid(part.parts);
+    }
+  };
+  walkForCid(payload?.parts);
+
+  if (Object.keys(cidMeta).length === 0) return html;
+
+  // Fetch each attachment and build data URIs
+  const resolved: Record<string, string> = {};
+  await Promise.all(
+    Object.entries(cidMeta).map(async ([cid, { attachmentId, mimeType }]) => {
+      try {
+        const result = await client.getAttachment(messageId, attachmentId);
+        const standardB64 = result.data.replace(/-/g, '+').replace(/_/g, '/');
+        resolved[cid] = `data:${mimeType};base64,${standardB64}`;
+      } catch {
+        // Leave unresolvable — the sanitizer will drop it
+      }
+    }),
+  );
+
+  if (Object.keys(resolved).length === 0) return html;
+
+  return html.replace(/src="cid:([^"]+)"/gi, (_match, cid) => {
+    const dataUri = resolved[cid as string];
+    return dataUri ? `src="${dataUri}"` : `src="cid:${cid}"`;
+  });
+}
+
 function messageToGql(msg: GmailApiRawMessage): GmailMessageGql {
   const headers = extractHeaders(msg.payload?.headers);
   const { text, html } = extractBody(msg.payload);
@@ -283,6 +410,7 @@ function messageToGql(msg: GmailApiRawMessage): GmailMessageGql {
     bodyText: text || null,
     bodyHtml: html ?? null,
     hasAttachments: checkHasAttachments(msg.payload),
+    attachments: collectAttachmentParts(msg.payload),
     url: `https://mail.google.com/mail/u/0/#inbox/${msg.id}`,
   };
 }
@@ -332,7 +460,12 @@ export default {
 
       try {
         const msg = await client.getMessage(id, 'full');
-        return messageToGql(msg);
+        const result = messageToGql(msg);
+        // Resolve any large inline images (stored by attachmentId, no inline data)
+        if (result.bodyHtml) {
+          result.bodyHtml = await resolveRemoteInlineImages(result.bodyHtml, msg.payload, id, client);
+        }
+        return result;
       } catch (err: unknown) {
         ctx.logger.error('Failed to resolve gmail message', {
           messageId: id,
@@ -400,20 +533,26 @@ export default {
 
       try {
         const thread = await client.getThread(id);
-        const messages: GmailThreadMessageGql[] = (thread.messages ?? []).map((msg) => {
-          const headers = extractHeaders(msg.payload?.headers);
-          const { text, html } = extractBody(msg.payload);
-          return {
-            id: msg.id,
-            from: headers.from ?? null,
-            to: headers.to ?? null,
-            date: headers.date ?? null,
-            snippet: msg.snippet ?? null,
-            bodyText: text || null,
-            bodyHtml: html ?? null,
-            isUnread: (msg.labelIds ?? []).includes('UNREAD'),
-          };
-        });
+        const messages: GmailThreadMessageGql[] = await Promise.all(
+          (thread.messages ?? []).map(async (msg) => {
+            const headers = extractHeaders(msg.payload?.headers);
+            const { text, html: rawHtml } = extractBody(msg.payload);
+            // Resolve large inline images that need separate fetching
+            const html = rawHtml
+              ? await resolveRemoteInlineImages(rawHtml, msg.payload, msg.id, client)
+              : rawHtml;
+            return {
+              id: msg.id,
+              from: headers.from ?? null,
+              to: headers.to ?? null,
+              date: headers.date ?? null,
+              snippet: msg.snippet ?? null,
+              bodyText: text || null,
+              bodyHtml: html ?? null,
+              isUnread: (msg.labelIds ?? []).includes('UNREAD'),
+            };
+          }),
+        );
 
         const firstMsg = thread.messages?.[0];
         const firstHeaders = extractHeaders(firstMsg?.payload?.headers);
@@ -655,6 +794,29 @@ export default {
         return { success: true, message: 'Labels updated' };
       } catch (err: unknown) {
         return { success: false, message: `Failed to modify labels: ${getErrorMessage(err)}` };
+      }
+    },
+
+    fetchGmailAttachment: async (
+      _: unknown,
+      { messageId, attachmentId }: { messageId: string; attachmentId: string },
+      ctx: GmailResolverContext,
+    ): Promise<GmailAttachmentDataGql | null> => {
+      const client = getClient(ctx);
+      if (!client) return null;
+
+      ctx.logger.info('Fetching Gmail attachment', { messageId, attachmentId });
+
+      try {
+        const result = await client.getAttachment(messageId, attachmentId);
+        return { attachmentId, data: result.data };
+      } catch (err: unknown) {
+        ctx.logger.error('Failed to fetch attachment', {
+          messageId,
+          attachmentId,
+          error: getErrorMessage(err),
+        });
+        return null;
       }
     },
   },

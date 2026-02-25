@@ -14,7 +14,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-24T12:39:46.013Z"
+        "publishedAt": "2026-02-25T22:48:02.172Z"
       }
     },
     "keywords": [],
@@ -140,7 +140,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-24T12:39:46.014Z"
+        "publishedAt": "2026-02-25T22:48:02.173Z"
       }
     },
     "keywords": [],
@@ -249,7 +249,7 @@
       "0.3.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-24T12:39:46.015Z"
+        "publishedAt": "2026-02-25T22:48:02.174Z"
       }
     },
     "keywords": [],
@@ -359,7 +359,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-24T12:39:46.015Z"
+        "publishedAt": "2026-02-25T22:48:02.174Z"
       }
     },
     "keywords": [],
@@ -371,6 +371,86 @@
         {
           "id": "send_notification",
           "description": "Send a push notification to your own mobile devices"
+        }
+      ]
+    },
+    "verified": true
+  },
+  {
+    "id": "sentry",
+    "displayName": "Sentry",
+    "description": "Error monitoring with Sentry — search issues, view stack traces, resolve and assign.",
+    "author": {
+      "name": "Drift Team"
+    },
+    "license": "MIT",
+    "repository": "hellodrift/store",
+    "path": "packages/sentry",
+    "latest": "0.1.0",
+    "versions": {
+      "0.1.0": {
+        "ref": "main",
+        "driftCompat": ">=0.8.0",
+        "publishedAt": "2026-02-25T22:48:02.175Z"
+      }
+    },
+    "keywords": [],
+    "icon": "alert-triangle",
+    "provides": {
+      "integrations": [
+        "sentry"
+      ],
+      "canvases": [
+        "nav-sidebar",
+        "drawer",
+        "entity-drawer",
+        "entity-widget"
+      ],
+      "entities": [
+        "sentry_issue"
+      ],
+      "operations": [
+        {
+          "id": "get_viewer",
+          "description": "Get organization info to verify Sentry connection"
+        },
+        {
+          "id": "list_projects",
+          "description": "List all Sentry projects in the organization"
+        },
+        {
+          "id": "get_issues",
+          "description": "Search and list Sentry issues with filters"
+        },
+        {
+          "id": "get_issue",
+          "description": "Get a single Sentry issue by numeric ID"
+        },
+        {
+          "id": "get_issue_by_short_id",
+          "description": "Get a Sentry issue by short ID (e.g., PROJ-123)"
+        },
+        {
+          "id": "update_issue",
+          "description": "Update a Sentry issue (status, assignment, bookmark)",
+          "mutation": true
+        },
+        {
+          "id": "bulk_update_issues",
+          "description": "Bulk update multiple Sentry issues",
+          "mutation": true
+        },
+        {
+          "id": "get_issue_events",
+          "description": "Get recent events (error occurrences) for a Sentry issue"
+        },
+        {
+          "id": "get_latest_event",
+          "description": "Get the most recent event for a Sentry issue"
+        },
+        {
+          "id": "list_members",
+          "description": "List organization members for assignment"
         }
       ]
     },
@@ -391,7 +471,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-24T12:39:46.015Z"
+        "publishedAt": "2026-02-25T22:48:02.175Z"
       }
     },
     "keywords": [],
@@ -476,7 +556,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-24T12:39:46.016Z"
+        "publishedAt": "2026-02-25T22:48:02.175Z"
       }
     },
     "keywords": [],
@@ -568,7 +648,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-24T12:39:46.016Z"
+        "publishedAt": "2026-02-25T22:48:02.176Z"
       }
     },
     "keywords": [],
@@ -606,7 +686,7 @@
       "0.2.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-24T12:39:46.017Z"
+        "publishedAt": "2026-02-25T22:48:02.176Z"
       }
     },
     "keywords": [],
@@ -647,7 +727,7 @@
       "0.2.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-24T12:39:46.017Z"
+        "publishedAt": "2026-02-25T22:48:02.177Z"
       }
     },
     "keywords": [],

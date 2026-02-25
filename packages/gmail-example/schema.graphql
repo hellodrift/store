@@ -1,3 +1,15 @@
+type GmailAttachment {
+  attachmentId: ID!
+  filename: String!
+  mimeType: String!
+  size: Int!
+}
+
+type GmailAttachmentData {
+  attachmentId: ID!
+  data: String!
+}
+
 type GmailMessage {
   id: ID!
   type: String!
@@ -19,6 +31,7 @@ type GmailMessage {
   bodyText: String
   bodyHtml: String
   hasAttachments: Boolean
+  attachments: [GmailAttachment!]
   url: String
   linkedContext: String
 }
@@ -83,4 +96,5 @@ extend type Mutation {
   markGmailMessageRead(id: ID!): EntityActionResult!
   markGmailMessageUnread(id: ID!): EntityActionResult!
   modifyGmailLabels(id: ID!, addLabelIds: [String!], removeLabelIds: [String!]): EntityActionResult!
+  fetchGmailAttachment(messageId: ID!, attachmentId: ID!): GmailAttachmentData
 }

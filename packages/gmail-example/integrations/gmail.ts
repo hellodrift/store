@@ -140,6 +140,12 @@ export class GmailClient {
     });
   }
 
+  async getAttachment(messageId: string, attachmentId: string): Promise<{ data: string; size: number }> {
+    return this.request<{ data: string; size: number }>(
+      `/users/me/messages/${messageId}/attachments/${attachmentId}`
+    );
+  }
+
   async listLabels(): Promise<Array<{ id: string; name: string; type: string; messagesTotal?: number; messagesUnread?: number }>> {
     const result = await this.request<{
       labels: Array<{ id: string; name: string; type: string; messagesTotal?: number; messagesUnread?: number }>;
@@ -165,6 +171,14 @@ export function extractHeaders(headers?: GmailApiHeader[]): Record<string, strin
   return result;
 }
 
+function getContentId(headers?: GmailApiHeader[]): string | undefined {
+  if (!headers) return undefined;
+  const cidHeader = headers.find((h) => h.name.toLowerCase() === 'content-id');
+  if (!cidHeader?.value) return undefined;
+  // Strip angle brackets: <image001@domain.com> → image001@domain.com
+  return cidHeader.value.replace(/^<|>$/g, '');
+}
+
 export function extractBody(payload?: GmailApiPayload): { text: string; html?: string } {
   if (!payload) return { text: '' };
 
@@ -179,6 +193,8 @@ export function extractBody(payload?: GmailApiPayload): { text: string; html?: s
   if (payload.parts) {
     let text = '';
     let html: string | undefined;
+    // CID → data URI map for inline images already embedded in the message body
+    const cidMap: Record<string, string> = {};
 
     const walk = (parts: GmailApiPart[]) => {
       for (const part of parts) {
@@ -188,6 +204,14 @@ export function extractBody(payload?: GmailApiPayload): { text: string; html?: s
           html = Buffer.from(part.body.data, 'base64').toString('utf-8');
         } else if (part.mimeType?.startsWith('multipart/') && part.parts) {
           walk(part.parts);
+        } else if (part.mimeType?.startsWith('image/') && part.body?.data) {
+          // Inline image with data already present — build CID mapping
+          const cid = getContentId(part.headers);
+          if (cid) {
+            // Gmail uses URL-safe base64; data URIs need standard base64.
+            const standardB64 = part.body.data.replace(/-/g, '+').replace(/_/g, '/');
+            cidMap[cid] = `data:${part.mimeType};base64,${standardB64}`;
+          }
         }
       }
     };
@@ -196,6 +220,15 @@ export function extractBody(payload?: GmailApiPayload): { text: string; html?: s
     if (!text && html) {
       text = htmlToText(html);
     }
+
+    // Replace cid: references in HTML with data URIs where available
+    if (html && Object.keys(cidMap).length > 0) {
+      html = html.replace(/src="cid:([^"]+)"/gi, (_match, cid) => {
+        const dataUri = cidMap[cid as string];
+        return dataUri ? `src="${dataUri}"` : `src="cid:${cid}"`;
+      });
+    }
+
     return { text, html };
   }
 
@@ -217,10 +250,15 @@ function htmlToText(html: string): string {
 }
 
 export function hasAttachments(payload?: GmailApiPayload): boolean {
-  if (!payload?.parts) return false;
-  return payload.parts.some(
-    (part) => part.filename && part.filename.length > 0 && part.body?.attachmentId,
-  );
+  if (!payload) return false;
+  const check = (parts?: GmailApiPart[]): boolean => {
+    if (!parts) return false;
+    return parts.some((part) => {
+      if (part.filename && part.filename.length > 0 && part.body?.attachmentId) return true;
+      return check(part.parts);
+    });
+  };
+  return check(payload.parts);
 }
 
 export function buildRfc2822Message(params: {

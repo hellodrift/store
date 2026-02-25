@@ -29,7 +29,22 @@ const GET_GMAIL_MESSAGE = gql`
       bodyText
       bodyHtml
       hasAttachments
+      attachments {
+        attachmentId
+        filename
+        mimeType
+        size
+      }
       url
+    }
+  }
+`;
+
+const FETCH_ATTACHMENT = gql`
+  mutation FetchGmailAttachment($messageId: ID!, $attachmentId: ID!) {
+    fetchGmailAttachment(messageId: $messageId, attachmentId: $attachmentId) {
+      attachmentId
+      data
     }
   }
 `;
@@ -189,6 +204,7 @@ export default function ThreadDrawer({ entityId, label, drawer }: EntityDrawerPr
   const { data: labelsData } = useEntityQuery(GET_GMAIL_LABELS);
 
   // ── Mutations ────────────────────────────────────────────────────────────
+  const [fetchAttachment] = useEntityMutation(FETCH_ATTACHMENT);
   const [archiveMessage] = useEntityMutation(ARCHIVE_MESSAGE);
   const [unarchiveMessage] = useEntityMutation(UNARCHIVE_MESSAGE);
   const [starMessage] = useEntityMutation(STAR_MESSAGE);
@@ -273,6 +289,39 @@ export default function ThreadDrawer({ entityId, label, drawer }: EntityDrawerPr
     }
   };
 
+  const handleDownloadAttachment = async (attachmentId: string, filename: string, mimeType: string) => {
+    try {
+      const result = await fetchAttachment({ variables: { messageId: entityId, attachmentId } });
+      const base64 = result?.data?.fetchGmailAttachment?.data;
+      if (!base64) {
+        logger.warn('No attachment data returned', { attachmentId });
+        return;
+      }
+      // Gmail API returns URL-safe base64 — convert to standard base64 before decoding
+      const standard = base64.replace(/-/g, '+').replace(/_/g, '/');
+      const binaryStr = atob(standard);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      logger.info('Attachment downloaded', { attachmentId, filename });
+    } catch (err: unknown) {
+      logger.error('Failed to download attachment', {
+        attachmentId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
   const handleModifyLabels = (addLabelIds?: string[], removeLabelIds?: string[]) => {
     const currentLabels = message?.labelIds ?? [];
     const newLabels = currentLabels
@@ -331,6 +380,7 @@ export default function ThreadDrawer({ entityId, label, drawer }: EntityDrawerPr
       onTrash={handleTrash}
       onReply={handleReply}
       onModifyLabels={handleModifyLabels}
+      onDownloadAttachment={handleDownloadAttachment}
       error={optimistic.error}
       onDismissError={optimistic.dismissError}
       entityUri={entityUri}

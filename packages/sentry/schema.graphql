@@ -1,0 +1,111 @@
+type SentryIssue {
+  id: ID!
+  type: String!
+  uri: String!
+  title: String!
+  shortId: String!
+  culprit: String!
+  level: String!
+  status: String!
+  substatus: String
+  platform: String
+  count: String!
+  userCount: Int!
+  firstSeen: String!
+  lastSeen: String!
+  permalink: String!
+  isBookmarked: Boolean
+  hasSeen: Boolean
+  project: SentryProject!
+  assignedTo: SentryAssignee
+  metadata: SentryIssueMetadata
+  linkedContext: String
+}
+
+type SentryProject {
+  id: ID!
+  slug: String!
+  name: String!
+  platform: String
+}
+
+type SentryAssignee {
+  type: String!
+  id: String!
+  name: String!
+  email: String
+}
+
+type SentryIssueMetadata {
+  type: String
+  value: String
+  filename: String
+  function: String
+}
+
+type SentryEvent {
+  eventID: String!
+  id: String!
+  title: String!
+  message: String
+  dateCreated: String!
+  platform: String
+  culprit: String
+  environment: String
+  tags: [SentryTag!]
+  user: SentryEventUser
+  entries: [SentryEventEntry!]
+  release: SentryReleaseRef
+}
+
+type SentryTag {
+  key: String!
+  value: String!
+}
+
+type SentryEventUser {
+  id: String
+  email: String
+  username: String
+  ipAddress: String
+}
+
+type SentryEventEntry {
+  type: String!
+  data: JSON
+}
+
+type SentryReleaseRef {
+  version: String!
+}
+
+type SentryMember {
+  id: String!
+  name: String!
+  email: String
+}
+
+type SentryConnectionStatus {
+  connected: Boolean!
+  organizationName: String
+  organizationSlug: String
+}
+
+extend type Query {
+  sentryIssues(query: String, project: String, sort: String, statsPeriod: String, limit: Int): [SentryIssue!]!
+  sentryIssue(id: String!): SentryIssue
+  sentryIssueByShortId(shortId: String!): SentryIssue
+  sentryIssueEvents(issueId: String!, limit: Int): [SentryEvent!]!
+  sentryLatestEvent(issueId: String!): SentryEvent
+  sentryProjects: [SentryProject!]!
+  sentryMembers: [SentryMember!]!
+  sentryConnectionStatus: SentryConnectionStatus!
+}
+
+extend type Mutation {
+  sentryResolveIssue(id: String!): EntityActionResult!
+  sentryUnresolveIssue(id: String!): EntityActionResult!
+  sentryIgnoreIssue(id: String!, ignoreDuration: Int): EntityActionResult!
+  sentryAssignIssue(id: String!, assignedTo: String!): EntityActionResult!
+  sentryUnassignIssue(id: String!): EntityActionResult!
+}

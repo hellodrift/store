@@ -159,6 +159,7 @@ export default function GmailNav() {
       labelId: settings.labelId,
       maxResults: settings.maxResults,
     },
+    pollInterval: settings.refreshInterval,
   });
   const { openEntityDrawer } = useEntityDrawer();
 

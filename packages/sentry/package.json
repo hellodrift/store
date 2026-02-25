@@ -1,0 +1,10 @@
+{
+  "name": "@drift/plugin-sentry",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Official Drift plugin: Sentry error monitoring and issue management",
+  "dependencies": {
+    "@drift/entity-sdk": "*",
+    "zod": "^3.22.0"
+  }
+}

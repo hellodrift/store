@@ -11,7 +11,32 @@
 
 // Helper: get Trello client from context
 function getClient(ctx: any): any | null {
-  return ctx.integrations?.trello?.client ?? null;
+  const client = ctx.integrations?.trello?.client ?? null;
+  if (!client) {
+    ctx.logger?.warn('Trello: no client available — credentials may not be configured or are invalid. Open Trello settings to configure.');
+  }
+  return client;
+}
+
+// Helper: classify errors
+function isAuthError(err: any): boolean {
+  const status = err?.response?.status ?? err?.status ?? err?.statusCode;
+  const msg = err?.message ?? '';
+  return status === 401 || msg.includes('401') || msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('invalid token');
+}
+
+function isNotFoundError(err: any): boolean {
+  const status = err?.response?.status ?? err?.status ?? err?.statusCode;
+  return status === 404;
+}
+
+// Helper: format error for logging with full context
+function errCtx(err: any): Record<string, unknown> {
+  return {
+    error: err?.message ?? String(err),
+    status: err?.response?.status ?? err?.status ?? err?.statusCode ?? null,
+    responseBody: err?.response?.data ?? err?.responseBody ?? null,
+  };
 }
 
 // Helper: map raw Trello card REST response to GraphQL TrelloCard shape
@@ -82,14 +107,55 @@ function cardToGQL(card: any, listName?: string, boardName?: string): any {
   };
 }
 
-// Helper: fetch a full card with checklists and members
-async function fetchCardFull(client: any, id: string): Promise<any | null> {
+// Helper: fetch a full card with checklists and members, enriched with board/list names
+async function fetchCardFull(client: any, id: string, ctx?: any): Promise<any | null> {
   try {
     const card = await client.cards.getCard({ id, checklists: 'all', members: true, fields: 'all' });
-    return cardToGQL(card);
-  } catch {
+
+    // Enrich with board/list names (not in raw card response)
+    let boardName: string | undefined;
+    let listName: string | undefined;
+    if (card.idBoard) {
+      try {
+        const board = await client.boards.getBoard({ id: card.idBoard, lists: 'open', fields: 'name' });
+        boardName = board.name;
+        listName = (board.lists ?? []).find((l: any) => l.id === card.idList)?.name;
+      } catch { /* Board fetch failed, IDs used as fallback */ }
+    }
+
+    return cardToGQL(card, listName, boardName);
+  } catch (err: any) {
+    ctx?.logger?.error('Trello: fetchCardFull failed', { cardId: id, ...errCtx(err) });
     return null;
   }
+}
+
+// Helper: enrich raw card list with board/list names via parallel board fetches
+async function enrichCardsWithNames(client: any, rawCards: any[], ctx: any): Promise<any[]> {
+  if (rawCards.length === 0) return [];
+
+  const boardIdSet = new Set(rawCards.map((c: any) => c.idBoard).filter(Boolean));
+  const boardMap: Record<string, { name: string; lists: Record<string, string> }> = {};
+
+  await Promise.all(
+    Array.from(boardIdSet).map(async (boardId) => {
+      try {
+        const board = await client.boards.getBoard({ id: boardId, lists: 'open', fields: 'name' });
+        const lists = (board as any).lists ?? [];
+        boardMap[boardId as string] = {
+          name: (board as any).name ?? (boardId as string),
+          lists: Object.fromEntries(lists.map((l: any) => [l.id, l.name])),
+        };
+      } catch {
+        boardMap[boardId as string] = { name: boardId as string, lists: {} };
+      }
+    }),
+  );
+
+  return rawCards.map((c: any) => {
+    const info = boardMap[c.idBoard] ?? { name: c.idBoard, lists: {} };
+    return cardToGQL(c, info.lists[c.idList], info.name);
+  });
 }
 
 // Helper: map board to GQL shape
@@ -228,9 +294,12 @@ export default {
 
       ctx.logger.info('Resolving Trello card via GraphQL', { cardId: id });
       try {
-        return await fetchCardFull(client, id);
+        const card = await fetchCardFull(client, id, ctx);
+        if (!card) ctx.logger.warn('Trello card not found or failed to load', { cardId: id });
+        return card;
       } catch (err: any) {
-        ctx.logger.error('Failed to resolve Trello card', { cardId: id, error: err?.message ?? String(err) });
+        ctx.logger.error('Failed to resolve Trello card', { cardId: id, ...errCtx(err) });
+        if (isAuthError(err)) throw new Error('Trello authentication failed (401). Check your credentials in Trello settings.');
         return null;
       }
     },
@@ -245,14 +314,14 @@ export default {
 
       try {
         const searchQuery = query || 'is:open';
-        const results = await client.search.search({
+        const results = await client.search.getSearch({
           query: searchQuery,
           modelTypes: 'cards',
-          cards_limit: limit ?? 20,
-          ...(boardId ? { idBoards: boardId } : {}),
+          cards: { limit: limit ?? 20 },
+          ...(boardId ? { idBoards: [boardId] } : {}),
         });
 
-        let cards = (results.cards ?? []) as any[];
+        let cards = ((results as any).cards ?? []) as any[];
         if (listId) {
           cards = cards.filter((c: any) => c.idList === listId);
         }
@@ -265,17 +334,131 @@ export default {
 
     trelloMyCards: async (_: unknown, { limit }: { limit?: number }, ctx: any) => {
       const client = getClient(ctx);
-      if (!client) return [];
+      if (!client) throw new Error('Trello is not configured. Open Trello settings to add your API key and token.');
 
-      ctx.logger.info('Fetching my Trello cards', { limit: limit ?? 20 });
+      const maxCards = limit ?? 20;
+
+      // Log who we're authenticated as — helps diagnose credential issues
+      try {
+        const me = await client.members.getMember({ id: 'me' });
+        ctx.logger.info('Trello: authenticated as', {
+          id: (me as any).id,
+          username: (me as any).username,
+          fullName: (me as any).fullName,
+        });
+      } catch (meErr: any) {
+        ctx.logger.warn('Trello: could not fetch member info', errCtx(meErr));
+        if (isAuthError(meErr)) {
+          throw new Error('Trello authentication failed (401). Your API key or token is invalid or expired. Open Trello settings to update your credentials.');
+        }
+      }
+
+      ctx.logger.info('Fetching my Trello cards', { limit: maxCards });
 
       try {
-        const cards = await client.members.getMemberCards({ id: 'me', filter: 'open', limit: limit ?? 20 });
-        return (cards as any[]).map((c: any) => cardToGQL(c));
+        // getMemberCards returns cards where the user is in idMembers (explicitly assigned)
+        const cards = await client.members.getMemberCards({ id: 'me', filter: 'open', limit: maxCards });
+        const cardList = cards as any[];
+        ctx.logger.info('Fetched assigned Trello cards', { count: cardList.length });
+
+        if (cardList.length > 0) {
+          return cardList.map((c: any) => cardToGQL(c));
+        }
+
+        // Fallback: search for @me — finds cards the user is involved in (assigned, mentioned, etc.)
+        ctx.logger.info('No assigned cards found, falling back to @me search');
+        try {
+          const results = await client.search.getSearch({
+            query: '@me is:open',
+            modelTypes: 'cards',
+            cards: { limit: maxCards },
+          });
+          const searchCards = ((results as any).cards ?? []) as any[];
+          ctx.logger.info('Fetched @me search cards', { count: searchCards.length });
+          return searchCards.map((c: any) => cardToGQL(c));
+        } catch (searchErr: any) {
+          ctx.logger.warn('Trello @me search fallback failed', errCtx(searchErr));
+          return [];
+        }
       } catch (err: any) {
-        ctx.logger.error('Failed to fetch my Trello cards', { error: err?.message ?? String(err) });
-        return [];
+        ctx.logger.error('Failed to fetch my Trello cards', errCtx(err));
+        if (isAuthError(err)) {
+          throw new Error('Trello authentication failed (401). Your API key or token is invalid or expired. Open Trello settings to update your credentials.');
+        }
+        throw err;
       }
+    },
+
+    trelloNavCards: async (
+      _: unknown,
+      { boardIds, showAll, limit }: { boardIds?: string[]; showAll?: boolean; limit?: number },
+      ctx: any,
+    ) => {
+      const client = getClient(ctx);
+      if (!client) throw new Error('Trello is not configured. Open Trello settings to add your API key and token.');
+
+      const maxCards = limit ?? 50;
+
+      if (!showAll) {
+        // "Mine" mode — assigned cards, enriched with board/list names
+        ctx.logger.info('Trello nav: fetching my cards', { limit: maxCards });
+        try {
+          let rawCards: any[] = [];
+          try {
+            const assigned = await client.members.getMemberCards({ id: 'me', filter: 'open', limit: maxCards });
+            rawCards = assigned as any[];
+          } catch (err: any) {
+            if (isAuthError(err)) throw err;
+          }
+          if (rawCards.length === 0) {
+            ctx.logger.info('Trello nav: no assigned cards, falling back to @me search');
+            const results = await client.search.getSearch({ query: '@me is:open', modelTypes: 'cards', cards: { limit: maxCards } });
+            rawCards = ((results as any).cards ?? []) as any[];
+          }
+          ctx.logger.info('Trello nav: raw cards fetched', { count: rawCards.length });
+          return await enrichCardsWithNames(client, rawCards, ctx);
+        } catch (err: any) {
+          ctx.logger.error('Trello nav: failed to fetch my cards', errCtx(err));
+          if (isAuthError(err)) throw new Error('Trello authentication failed (401). Check your credentials in settings.');
+          throw err;
+        }
+      }
+
+      // "All" mode — fetch from specified boards (or all accessible boards)
+      let targetBoardIds = boardIds?.filter(Boolean) ?? [];
+      if (targetBoardIds.length === 0) {
+        ctx.logger.info('Trello nav: fetching all accessible boards');
+        try {
+          const boards = await client.members.getMemberBoards({ id: 'me', filter: 'open' });
+          targetBoardIds = (boards as any[]).slice(0, 10).map((b: any) => b.id);
+          ctx.logger.info('Trello nav: found boards', { count: targetBoardIds.length });
+        } catch (err: any) {
+          if (isAuthError(err)) throw new Error('Trello authentication failed (401). Check your credentials in settings.');
+          throw err;
+        }
+      }
+
+      ctx.logger.info('Trello nav: fetching cards from boards', { boardCount: targetBoardIds.length });
+      const allCards: any[] = [];
+      await Promise.all(
+        targetBoardIds.map(async (boardId: string) => {
+          try {
+            const [boardData, cards] = await Promise.all([
+              client.boards.getBoard({ id: boardId, lists: 'open', fields: 'name' }),
+              client.boards.getBoardCards({ id: boardId, filter: 'open' }),
+            ]);
+            const boardName = (boardData as any).name;
+            const lists = (boardData as any).lists ?? [];
+            const listMap = Object.fromEntries(lists.map((l: any) => [l.id, l.name]));
+            (cards as any[]).forEach((c: any) => allCards.push(cardToGQL(c, listMap[c.idList], boardName)));
+          } catch (err: any) {
+            ctx.logger.warn('Trello nav: failed to fetch cards for board', { boardId, ...errCtx(err) });
+          }
+        }),
+      );
+
+      ctx.logger.info('Trello nav: all cards fetched', { total: allCards.length });
+      return allCards.slice(0, maxCards);
     },
 
     trelloBoardCards: async (
@@ -284,7 +467,7 @@ export default {
       ctx: any,
     ) => {
       const client = getClient(ctx);
-      if (!client) return [];
+      if (!client) throw new Error('Trello is not configured. Open Trello settings to add your API key and token.');
 
       ctx.logger.info('Fetching Trello board cards', { boardId, listId, limit });
 
@@ -294,25 +477,24 @@ export default {
         try {
           const lists = await client.boards.getBoardLists({ id: boardId, filter: 'open' });
           listMap = Object.fromEntries((lists as any[]).map((l: any) => [l.id, l.name]));
-        } catch {
-          // list names are optional
+        } catch (listErr: any) {
+          ctx.logger.warn('Trello: could not fetch list names for board', { boardId, ...errCtx(listErr) });
         }
 
         const cards = await client.boards.getBoardCards({ id: boardId, filter: 'open' });
         let result = cards as any[];
 
-        if (listId) {
-          result = result.filter((c: any) => c.idList === listId);
-        }
+        if (listId) result = result.filter((c: any) => c.idList === listId);
+        if (limit) result = result.slice(0, limit);
 
-        if (limit) {
-          result = result.slice(0, limit);
-        }
-
+        ctx.logger.info('Fetched Trello board cards', { boardId, count: result.length });
         return result.map((c: any) => cardToGQL(c, listMap[c.idList]));
       } catch (err: any) {
-        ctx.logger.error('Failed to fetch board cards', { boardId, error: err?.message ?? String(err) });
-        return [];
+        ctx.logger.error('Failed to fetch board cards', { boardId, ...errCtx(err) });
+        if (isAuthError(err)) {
+          throw new Error('Trello authentication failed (401). Your API key or token is invalid or expired. Open Trello settings to update your credentials.');
+        }
+        throw err;
       }
     },
 
@@ -332,14 +514,18 @@ export default {
 
     trelloBoards: async (_: unknown, { filter }: { filter?: string }, ctx: any) => {
       const client = getClient(ctx);
-      if (!client) return [];
+      if (!client) throw new Error('Trello is not configured. Open Trello settings to add your API key and token.');
 
       try {
         const boards = await client.members.getMemberBoards({ id: 'me', filter: filter ?? 'open' });
+        ctx.logger.info('Fetched Trello boards', { count: (boards as any[]).length });
         return (boards as any[]).map(boardToGQL);
       } catch (err: any) {
-        ctx.logger.error('Failed to fetch Trello boards', { error: err?.message ?? String(err) });
-        return [];
+        ctx.logger.error('Failed to fetch Trello boards', errCtx(err));
+        if (isAuthError(err)) {
+          throw new Error('Trello authentication failed (401). Your API key or token is invalid or expired. Open Trello settings to update your credentials.');
+        }
+        throw err;
       }
     },
 
@@ -567,7 +753,7 @@ export default {
       if (!client) return { success: false, message: 'No API key or token configured' };
 
       try {
-        await (client.cards as any).createCardComment({ id: cardId, text });
+        await client.cards.addCardComment({ id: cardId, text });
         return { success: true, message: `Added comment` };
       } catch (err: any) {
         return { success: false, message: `Failed to add comment: ${err?.message ?? String(err)}` };

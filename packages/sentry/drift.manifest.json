@@ -1,0 +1,28 @@
+{
+  "name": "sentry",
+  "displayName": "Sentry",
+  "description": "Error monitoring with Sentry — search issues, view stack traces, resolve and assign.",
+  "version": "0.1.0",
+  "integrations": ["sentry"],
+  "graphql": {
+    "schema": "schema.graphql",
+    "resolvers": "resolvers.ts"
+  },
+  "canvases": {
+    "nav-sidebar": {
+      "component": "components/NavSection.tsx",
+      "label": "Sentry",
+      "icon": "alert-triangle",
+      "priority": 35
+    },
+    "drawer": {
+      "component": "components/SettingsDrawer.tsx"
+    },
+    "entity-drawer": [
+      { "component": "components/IssueDrawer.tsx", "entityType": "sentry_issue" }
+    ],
+    "entity-widget": [
+      { "component": "components/IssueWidget.tsx", "entityType": "sentry_issue" }
+    ]
+  }
+}

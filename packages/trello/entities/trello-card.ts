@@ -181,13 +181,20 @@ function cardToEntity(card: any, listName?: string, boardName?: string): TrelloC
 
 async function fetchCardFull(client: TrelloClient, id: string): Promise<TrelloCard | null> {
   try {
-    const card = await client.cards.getCard({
-      id,
-      checklists: 'all',
-      members: true,
-      fields: 'all',
-    } as any);
-    return cardToEntity(card as any);
+    const card = await client.cards.getCard({ id, checklists: 'all', members: true, fields: 'all' } as any);
+
+    // Enrich with board/list names (not included in raw card response)
+    let boardName: string | undefined;
+    let listName: string | undefined;
+    if ((card as any).idBoard) {
+      try {
+        const board = await (client as any).boards.getBoard({ id: (card as any).idBoard, lists: 'open', fields: 'name' });
+        boardName = board.name;
+        listName = (board.lists ?? []).find((l: any) => l.id === (card as any).idList)?.name;
+      } catch { /* Board fetch failed, IDs used as fallback */ }
+    }
+
+    return cardToEntity(card as any, listName, boardName);
   } catch {
     return null;
   }
@@ -263,6 +270,25 @@ const completeDueDateInput = z.object({
 
 const addCommentInput = z.object({
   text: z.string().describe('Comment text to add to the card.'),
+});
+
+const addChecklistInput = z.object({
+  name: z.string().describe('Name for the new checklist.'),
+});
+
+const addChecklistItemInput = z.object({
+  checklistId: z.string().describe(
+    'ID of the checklist to add the item to. Call list_checklists(cardId) to find valid checklistIds.',
+  ),
+  name: z.string().describe('Text/name of the new checklist item.'),
+  pos: z.enum(['top', 'bottom']).optional().describe('Position in the checklist. Default: bottom.'),
+});
+
+const completeChecklistItemInput = z.object({
+  checkItemId: z.string().describe(
+    'ID of the checklist item to update. Call list_checklists(cardId) and look inside checkItems to find the checkItemId.',
+  ),
+  complete: z.boolean().describe('true to mark the item as complete, false to mark it as incomplete.'),
 });
 
 // ---------- Entity definition ----------
@@ -564,7 +590,7 @@ const TrelloCardEntity = defineEntity({
 
         const input = params.input as z.infer<typeof addCommentInput>;
         ctx.logger.info('Adding comment to Trello card', { cardId: params.entity.id });
-        await client.cards.createCardComment({ id: params.entity.id, text: input.text } as any);
+        await client.cards.addCardComment({ id: params.entity.id, text: input.text } as any);
         return {
           success: true,
           message: `Added comment to card "${params.entity.title}"`,
@@ -747,6 +773,102 @@ const TrelloCardEntity = defineEntity({
         };
       },
     },
+
+    {
+      id: 'add_checklist',
+      label: 'Add Checklist',
+      description: 'Add a new checklist to a card',
+      icon: 'check-square',
+      scope: 'instance',
+      aiHint: 'Use when the user wants to add a new checklist (todo list) to a card. Provide a name for the checklist.',
+      inputSchema: addChecklistInput,
+      handler: async (
+        params: EntityActionParams<TrelloCard>,
+        ctx: EntityResolverContext,
+      ): Promise<EntityActionResult> => {
+        const client = getClient(ctx);
+        if (!client) return { success: false, message: 'No API key or token configured' };
+        if (!params.entity) return { success: false, message: 'No entity provided' };
+
+        const input = params.input as z.infer<typeof addChecklistInput>;
+        ctx.logger.info('Adding checklist to Trello card', { cardId: params.entity.id, name: input.name });
+        await client.checklists.createChecklist({ idCard: params.entity.id, name: input.name, pos: 'bottom' } as any);
+        const entity = await fetchCardFull(client, params.entity.id);
+        return {
+          success: true,
+          message: `Added checklist "${input.name}" to card "${params.entity.title}"`,
+          entity: entity ?? undefined,
+        };
+      },
+    },
+
+    {
+      id: 'add_checklist_item',
+      label: 'Add Checklist Item',
+      description: 'Add a new item to an existing checklist on a card',
+      icon: 'plus-circle',
+      scope: 'instance',
+      aiHint:
+        'Use when the user wants to add a new task or item to an existing checklist. ' +
+        'Call list_checklists(cardId) to get the checklistId.',
+      inputSchema: addChecklistItemInput,
+      handler: async (
+        params: EntityActionParams<TrelloCard>,
+        ctx: EntityResolverContext,
+      ): Promise<EntityActionResult> => {
+        const client = getClient(ctx);
+        if (!client) return { success: false, message: 'No API key or token configured' };
+        if (!params.entity) return { success: false, message: 'No entity provided' };
+
+        const input = params.input as z.infer<typeof addChecklistItemInput>;
+        ctx.logger.info('Adding checklist item', { cardId: params.entity.id, checklistId: input.checklistId, name: input.name });
+        await client.checklists.createChecklistCheckItem({
+          id: input.checklistId,
+          name: input.name,
+          pos: input.pos ?? 'bottom',
+        } as any);
+        const entity = await fetchCardFull(client, params.entity.id);
+        return {
+          success: true,
+          message: `Added "${input.name}" to checklist`,
+          entity: entity ?? undefined,
+        };
+      },
+    },
+
+    {
+      id: 'complete_checklist_item',
+      label: 'Complete Checklist Item',
+      description: 'Mark a checklist item as complete or incomplete',
+      icon: 'check',
+      scope: 'instance',
+      aiHint:
+        'Use when the user wants to check off or uncheck a checklist item. ' +
+        'Call list_checklists(cardId) and look inside checkItems[] to find the checkItemId.',
+      inputSchema: completeChecklistItemInput,
+      handler: async (
+        params: EntityActionParams<TrelloCard>,
+        ctx: EntityResolverContext,
+      ): Promise<EntityActionResult> => {
+        const client = getClient(ctx);
+        if (!client) return { success: false, message: 'No API key or token configured' };
+        if (!params.entity) return { success: false, message: 'No entity provided' };
+
+        const input = params.input as z.infer<typeof completeChecklistItemInput>;
+        ctx.logger.info('Updating checklist item state', { cardId: params.entity.id, checkItemId: input.checkItemId, complete: input.complete });
+        await client.cards.updateCardCheckItem({
+          id: params.entity.id,
+          idCheckItem: input.checkItemId,
+          state: input.complete ? 'complete' : 'incomplete',
+        } as any);
+        const entity = await fetchCardFull(client, params.entity.id);
+        return {
+          success: true,
+          message: input.complete ? 'Marked checklist item as complete' : 'Marked checklist item as incomplete',
+          entity: entity ?? undefined,
+        };
+      },
+    },
   ],
 
   resolve: async ({ id }: { id: string }, ctx) => {
@@ -773,11 +895,11 @@ const TrelloCardEntity = defineEntity({
     ctx.logger.info('Searching Trello cards', { query, limit });
 
     try {
-      const results = await client.search.search({
+      const results = await (client as any).search.getSearch({
         query: query || 'is:open',
         modelTypes: 'cards',
-        cards_limit: limit,
-      } as any);
+        cards: { limit },
+      });
 
       const cards = (results as any).cards ?? [];
       return cards.map((c: any) => cardToEntity(c));
