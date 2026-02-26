@@ -31,6 +31,10 @@
     "drawer": {
       "component": "components/SettingsDrawer.tsx"
     },
+    "workstream-settings-drawer": {
+      "component": "components/WorkstreamSection.tsx",
+      "priority": 50
+    },
     "feed-card": {
       "component": "components/LinearFeedCard.tsx",
       "entityType": "linear_issue",

@@ -28,6 +28,7 @@ import {
 import {
   useEntityQuery,
   useEntityMutation,
+  usePluginStorage,
   gql,
   logger,
   openExternal,
@@ -669,10 +670,11 @@ function MetricsTab({ grafanaUrl }: { grafanaUrl: string }) {
   );
 }
 
-function LogsTab() {
-  const [service, setService] = useState('all');
+function LogsTab({ initialService }: { initialService?: string }) {
+  const [defaultLogMinutes] = usePluginStorage('obs:defaultLogMinutes', 1440);
+  const [service, setService] = useState(initialService ?? 'all');
   const [level, setLevel] = useState('all');
-  const [since] = useState(() => new Date(Date.now() - 15 * 60 * 1000).toISOString());
+  const [since] = useState(() => new Date(Date.now() - (defaultLogMinutes ?? 1440) * 60_000).toISOString());
 
   const logql = useMemo(() => {
     const filters: string[] = [service === 'all' ? 'service=~".+"' : `service="${service}"`];
@@ -877,7 +879,15 @@ function CredentialField({
   );
 }
 
+const LOG_RANGE_OPTIONS = [
+  { label: '15m', minutes: 15 },
+  { label: '1h',  minutes: 60 },
+  { label: '6h',  minutes: 360 },
+  { label: '24h', minutes: 1440 },
+] as const;
+
 function SettingsTab() {
+  const [defaultLogMinutes, setDefaultLogMinutes] = usePluginStorage('obs:defaultLogMinutes', 1440);
   const { data: serverConfig, refetch: refetchConfig } = useEntityQuery(OBS_CONFIG, {
     fetchPolicy: 'cache-and-network',
   });
@@ -998,6 +1008,37 @@ function SettingsTab() {
           {saveStatus.msg}
         </div>
       )}
+
+      {/* Display Defaults */}
+      <ContentSection title="Display Defaults">
+        <div style={{ marginBottom: 4 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+            Default log time range
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {LOG_RANGE_OPTIONS.map(({ label, minutes }) => (
+              <button
+                key={minutes}
+                onClick={() => setDefaultLogMinutes(minutes)}
+                style={{
+                  padding: '3px 10px',
+                  fontSize: 12,
+                  borderRadius: 5,
+                  border: '1px solid var(--border-muted)',
+                  background: (defaultLogMinutes ?? 1440) === minutes ? 'var(--brand-primary)' : 'var(--surface-subtle)',
+                  color: (defaultLogMinutes ?? 1440) === minutes ? '#fff' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 6 }}>
+            Applied when opening the Logs view or a service logs drawer.
+          </div>
+        </div>
+      </ContentSection>
 
       {/* Service URLs */}
       <ContentSection title="Service URLs">
@@ -1127,10 +1168,10 @@ const TABS = [
   { id: 'alerts', label: 'Alerts' },
   { id: 'metrics', label: 'Metrics' },
   { id: 'logs', label: 'Logs' },
-  { id: 'settings', label: 'Settings' },
 ] as const;
 
-type TabId = typeof TABS[number]['id'];
+// 'settings' is not in the tab bar — only reachable via the gear icon in the nav sidebar
+type TabId = typeof TABS[number]['id'] | 'settings';
 
 export default function ObsDrawer({ payload, drawer }: DrawerProps) {
   const initialTab = (payload?.tab as TabId) ?? 'alerts';
@@ -1192,7 +1233,7 @@ export default function ObsDrawer({ payload, drawer }: DrawerProps) {
               <MetricsTab grafanaUrl={grafanaUrl} />
             </div>
           )}
-          {activeTab === 'logs' && <LogsTab />}
+          {activeTab === 'logs' && <LogsTab initialService={payload?.service as string | undefined} />}
           {activeTab === 'settings' && (
             <div style={{ flex: 1, overflow: 'auto' }}>
               <SettingsTab />

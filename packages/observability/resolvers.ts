@@ -90,37 +90,55 @@ function promqlValue(result: any): number | null {
 // ─── Resolvers ────────────────────────────────────────────────────────────
 
 export default {
-  ObsAlert: {
+  ActiveAlert: {
     /**
      * linkedContext: Rich markdown context injected into the AI when this alert
      * entity is referenced in a workstream. Makes Claude aware of the incident
      * details (labels, annotations, duration, firing status) for intelligent
      * incident response assistance.
+     *
+     * parent may be a ResolvedEntity (from the linkedContext system, where
+     * parent.id = fingerprint) or a direct GraphQL parent (where
+     * parent.fingerprint = fingerprint). Fetches fresh alert data from
+     * Alertmanager so it works in both contexts.
      */
     linkedContext: async (parent: any, _args: unknown, ctx: any) => {
       const client = getClient(ctx);
+      if (!client) return null;
 
       try {
+        // parent.id is set by the linkedContext system (ResolvedEntity.id = fingerprint)
+        // parent.fingerprint is set when called from GraphQL
+        const fingerprint = parent.id || parent.fingerprint;
+        if (!fingerprint) return null;
+
+        // Fetch fresh alert data from Alertmanager by fingerprint
+        const alerts: any[] = await httpGet(`${client.alertmanagerUrl}/api/v2/alerts`);
+        const rawAlert = alerts.find((a: any) => a.fingerprint === fingerprint);
+        if (!rawAlert) return null;
+
+        const alert = alertToGQL(rawAlert);
+
         const lines: string[] = [
-          `## 🚨 Alert: ${parent.alertname}`,
-          `- **Severity**: ${parent.severity ?? 'unknown'}`,
-          `- **State**: ${parent.state}`,
-          `- **Firing for**: ${parent.duration}`,
-          `- **Started**: ${parent.startsAt}`,
+          `## 🚨 Alert: ${alert.alertname}`,
+          `- **Severity**: ${alert.severity ?? 'unknown'}`,
+          `- **State**: ${alert.state}`,
+          `- **Firing for**: ${alert.duration}`,
+          `- **Started**: ${alert.startsAt}`,
         ];
 
-        if (parent.summary) {
-          lines.push(`- **Summary**: ${parent.summary}`);
+        if (alert.summary) {
+          lines.push(`- **Summary**: ${alert.summary}`);
         }
 
-        if (parent.description && parent.description !== parent.summary) {
-          lines.push('', '### Description', parent.description);
+        if (alert.description && alert.description !== alert.summary) {
+          lines.push('', '### Description', alert.description);
         }
 
         // Decode labels for context
-        if (parent.labels) {
+        if (alert.labels) {
           try {
-            const labelMap: Record<string, string> = JSON.parse(parent.labels);
+            const labelMap: Record<string, string> = JSON.parse(alert.labels);
             const keyLabels = Object.entries(labelMap)
               .filter(([k]) => !['alertname', 'severity', '__schema__'].includes(k))
               .map(([k, v]) => `  - ${k}: ${v}`)
@@ -132,11 +150,10 @@ export default {
         }
 
         // Fetch recent related errors from Loki if available
-        if (client?.lokiUrl) {
+        if (client.lokiUrl) {
           try {
-            const job = parent.labels ? JSON.parse(parent.labels)?.job : null;
-            const service = parent.labels ? JSON.parse(parent.labels)?.service : null;
-            const target = service || job;
+            const labelMap = alert.labels ? JSON.parse(alert.labels) : {};
+            const target = labelMap?.service || labelMap?.job;
 
             if (target) {
               const logql = `{service="${target}"} | json | level=~"error|fatal"`;
@@ -146,23 +163,20 @@ export default {
                 `query=${encodeURIComponent(logql)}&` +
                 `start=${startNs}&end=${endNs}&limit=5&direction=backward`;
 
-              const lokiHeaders = client ? basicAuthHeader(client.lokiUser, client.lokiPassword) : {};
-              const res = await fetch(url, { headers: lokiHeaders, signal: AbortSignal.timeout(5000) });
-              if (res.ok) {
-                const lokiData = await res.json();
-                const recentErrors: string[] = [];
-                for (const stream of lokiData?.data?.result ?? []) {
-                  for (const [, rawLine] of (stream.values ?? []).slice(0, 3)) {
-                    let msg = rawLine as string;
-                    try { msg = JSON.parse(rawLine).msg || msg; } catch {}
-                    recentErrors.push(`  - ${msg}`);
-                    if (recentErrors.length >= 3) break;
-                  }
+              const lokiHeaders = basicAuthHeader(client.lokiUser, client.lokiPassword);
+              const lokiData = await httpGet(url, lokiHeaders);
+              const recentErrors: string[] = [];
+              for (const stream of lokiData?.data?.result ?? []) {
+                for (const [, rawLine] of (stream.values ?? []).slice(0, 3)) {
+                  let msg = rawLine as string;
+                  try { msg = JSON.parse(rawLine).msg || msg; } catch {}
+                  recentErrors.push(`  - ${msg}`);
                   if (recentErrors.length >= 3) break;
                 }
-                if (recentErrors.length > 0) {
-                  lines.push('', `### Recent errors from \`${target}\``, ...recentErrors);
-                }
+                if (recentErrors.length >= 3) break;
+              }
+              if (recentErrors.length > 0) {
+                lines.push('', `### Recent errors from \`${target}\``, ...recentErrors);
               }
             }
           } catch {
@@ -172,8 +186,8 @@ export default {
 
         return lines.join('\n');
       } catch (err: any) {
-        ctx.logger.error('Failed to resolve linkedContext for ObsAlert', {
-          alertname: parent.alertname,
+        ctx.logger.error('Failed to resolve linkedContext for ActiveAlert', {
+          fingerprint: parent.id || parent.fingerprint,
           error: err?.message ?? String(err),
         });
         return null;
@@ -359,13 +373,145 @@ export default {
       if (!client) return [];
 
       try {
+        const startNs = (Date.now() - 24 * 60 * 60 * 1000) * 1_000_000;
+        const endNs = Date.now() * 1_000_000;
         const data = await httpGet(
-          `${client.lokiUrl}/loki/api/v1/label/${encodeURIComponent(label)}/values`,
+          `${client.lokiUrl}/loki/api/v1/label/${encodeURIComponent(label)}/values?start=${startNs}&end=${endNs}`,
           basicAuthHeader(client.lokiUser, client.lokiPassword),
         );
         return data?.data ?? [];
       } catch (err: any) {
         ctx.logger.error('obsLokiLabelValues failed', { label, error: err?.message });
+        return [];
+      }
+    },
+
+    obsQueryRange: async (
+      _: unknown,
+      { query, start, end, step }: { query: string; start?: string; end?: string; step?: string },
+      ctx: any,
+    ) => {
+      const client = getClient(ctx);
+      if (!client) return [];
+
+      const startMs = start ? new Date(start).getTime() : Date.now() - 60 * 60_000;
+      const endMs   = end   ? new Date(end).getTime()   : Date.now();
+      const rangeSecs = (endMs - startMs) / 1000;
+      const autoStep  = `${Math.max(15, Math.ceil(rangeSecs / 200))}s`;
+      const stepParam = step || autoStep;
+
+      try {
+        const url = `${client.prometheusUrl}/api/v1/query_range?` +
+          `query=${encodeURIComponent(query)}&` +
+          `start=${startMs / 1000}&end=${endMs / 1000}&step=${stepParam}`;
+
+        const data = await httpGet(url, basicAuthHeader(client.prometheusUser, client.prometheusPassword));
+        return (data?.data?.result ?? []).map((r: any) => ({
+          metric: JSON.stringify(r.metric ?? {}),
+          values: r.values ?? [],
+        }));
+      } catch (err: any) {
+        ctx.logger.error('obsQueryRange failed', { query, error: err?.message });
+        return [];
+      }
+    },
+
+    obsMetricNames: async (
+      _: unknown,
+      { job }: { job?: string },
+      ctx: any,
+    ) => {
+      const client = getClient(ctx);
+      if (!client) return [];
+
+      try {
+        const matchParam = job ? `?match[]=${encodeURIComponent(`{job="${job}"}`)}` : '';
+        const data = await httpGet(
+          `${client.prometheusUrl}/api/v1/label/__name__/values${matchParam}`,
+          basicAuthHeader(client.prometheusUser, client.prometheusPassword),
+        );
+        return data?.data ?? [];
+      } catch (err: any) {
+        ctx.logger.error('obsMetricNames failed', { job, error: err?.message });
+        return [];
+      }
+    },
+
+    obsJobTargets: async (
+      _: unknown,
+      { job }: { job: string },
+      ctx: any,
+    ) => {
+      const client = getClient(ctx);
+      if (!client) return [];
+
+      try {
+        const data = await httpGet(
+          `${client.prometheusUrl}/api/v1/targets`,
+          basicAuthHeader(client.prometheusUser, client.prometheusPassword),
+        );
+        return (data?.data?.activeTargets ?? [])
+          .filter((t: any) => (t.labels?.job ?? t.discoveredLabels?.job ?? '') === job)
+          .map((t: any) => ({
+            job: t.labels?.job ?? 'unknown',
+            instance: t.labels?.instance ?? 'unknown',
+            health: t.health ?? 'unknown',
+            lastScrape: t.lastScrape ?? null,
+            lastError: t.lastError || null,
+          }));
+      } catch (err: any) {
+        ctx.logger.error('obsJobTargets failed', { job, error: err?.message });
+        return [];
+      }
+    },
+
+    obsPromLabelNames: async (
+      _: unknown,
+      { metricName, job }: { metricName?: string; job?: string },
+      ctx: any,
+    ) => {
+      const client = getClient(ctx);
+      if (!client) return [];
+
+      const matchers: string[] = [];
+      if (metricName) matchers.push(`__name__="${metricName}"`);
+      if (job) matchers.push(`job="${job}"`);
+      const matchParam = matchers.length ? `?match[]={${matchers.join(',')}}` : '';
+
+      try {
+        const data = await httpGet(
+          `${client.prometheusUrl}/api/v1/labels${matchParam}`,
+          basicAuthHeader(client.prometheusUser, client.prometheusPassword),
+        );
+        // Strip internal labels (e.g. __name__)
+        return (data?.data ?? []).filter((l: string) => !l.startsWith('__'));
+      } catch (err: any) {
+        ctx.logger.error('obsPromLabelNames failed', { metricName, job, error: err?.message });
+        return [];
+      }
+    },
+
+    obsPromLabelValues: async (
+      _: unknown,
+      { label, metricName, job }: { label: string; metricName?: string; job?: string },
+      ctx: any,
+    ) => {
+      const client = getClient(ctx);
+      if (!client) return [];
+
+      const matchers: string[] = [];
+      if (metricName) matchers.push(`__name__="${metricName}"`);
+      if (job) matchers.push(`job="${job}"`);
+      const matchParam = matchers.length ? `?match[]={${matchers.join(',')}}` : '';
+
+      try {
+        const data = await httpGet(
+          `${client.prometheusUrl}/api/v1/label/${encodeURIComponent(label)}/values${matchParam}`,
+          basicAuthHeader(client.prometheusUser, client.prometheusPassword),
+        );
+        return data?.data ?? [];
+      } catch (err: any) {
+        ctx.logger.error('obsPromLabelValues failed', { label, metricName, job, error: err?.message });
         return [];
       }
     },

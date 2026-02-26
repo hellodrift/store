@@ -759,14 +759,18 @@ function SetupWizard({ onComplete }: { onComplete: () => void }) {
                 whiteSpace: 'pre-wrap', wordBreak: 'break-all', lineHeight: 1.5,
                 border: '1px solid var(--border-muted)', position: 'relative',
               }}>
-                {`WYZE_EMAIL="${creds.email}" \\
-WYZE_PASSWORD="${creds.password}" \\
+                {`python3 -m venv ~/.drift/customizations/wyze-cameras/server/.venv && \\
+~/.drift/customizations/wyze-cameras/server/.venv/bin/pip install -q \\
+  -r ~/.drift/customizations/wyze-cameras/server/requirements.txt && \\
+WYZE_EMAIL="${creds.email}" \\
+WYZE_PASSWORD='${creds.password}' \\
 API_ID="${creds.apiId}" \\
 API_KEY="${creds.apiKey}" \\
-python3 wyze_server.py`}
+~/.drift/customizations/wyze-cameras/server/.venv/bin/python \\
+  ~/.drift/customizations/wyze-cameras/server/wyze_server.py`}
                 <button
                   onClick={() => {
-                    const cmd = `WYZE_EMAIL="${creds.email}" WYZE_PASSWORD="${creds.password}" API_ID="${creds.apiId}" API_KEY="${creds.apiKey}" python3 wyze_server.py`;
+                    const cmd = `python3 -m venv ~/.drift/customizations/wyze-cameras/server/.venv && ~/.drift/customizations/wyze-cameras/server/.venv/bin/pip install -q -r ~/.drift/customizations/wyze-cameras/server/requirements.txt && WYZE_EMAIL="${creds.email}" WYZE_PASSWORD='${creds.password}' API_ID="${creds.apiId}" API_KEY="${creds.apiKey}" ~/.drift/customizations/wyze-cameras/server/.venv/bin/python ~/.drift/customizations/wyze-cameras/server/wyze_server.py`;
                     navigator.clipboard.writeText(cmd);
                   }}
                   style={{

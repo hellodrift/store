@@ -1,4 +1,4 @@
-type ObsAlert {
+type ActiveAlert {
   fingerprint: String!
   alertname: String!
   severity: String
@@ -77,12 +77,17 @@ input ObsSettingsInput {
   alertmanagerPassword: String
 }
 
+type ObsTimeSeries {
+  metric: String!        # JSON-encoded label map, e.g. {"__name__":"up","job":"drift-web"}
+  values: [[String!]!]!  # [[unix_timestamp_seconds, value_string], ...]
+}
+
 extend type Query {
   # Single alert by fingerprint
-  obsAlert(fingerprint: String!): ObsAlert
+  obsAlert(fingerprint: String!): ActiveAlert
 
   # All active alerts from Alertmanager
-  obsAlerts: [ObsAlert!]!
+  obsAlerts: [ActiveAlert!]!
 
   # Summary for sidebar widget (alert counts + stack health)
   obsSummary: ObsStats!
@@ -102,6 +107,26 @@ extend type Query {
 
   # Current resolved config — URLs and credential status (no secrets)
   obsConfig: ObsConfig!
+
+  # Prometheus range query — returns one time-series per matching metric
+  obsQueryRange(
+    query: String!
+    start: String  # ISO-8601 (default: 1h ago)
+    end: String    # ISO-8601 (default: now)
+    step: String   # Duration string, e.g. "15s", "1m" (default: auto ~200 steps)
+  ): [ObsTimeSeries!]!
+
+  # All metric names for a Prometheus job (for the metrics picker)
+  obsMetricNames(job: String): [String!]!
+
+  # Active scrape targets for a specific Prometheus job
+  obsJobTargets(job: String!): [ObsTarget!]!
+
+  # Prometheus label names for a metric/job (for query builder filter key suggestions)
+  obsPromLabelNames(metricName: String, job: String): [String!]!
+
+  # Prometheus label values for a label key (for query builder filter value suggestions)
+  obsPromLabelValues(label: String!, metricName: String, job: String): [String!]!
 }
 
 extend type Mutation {

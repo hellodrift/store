@@ -247,7 +247,15 @@ export default function AlertDrawer({ entityId, label, drawer }: EntityDrawerPro
             entityTitle={alert.alertname}
             linkedWorkstreams={workstreamLinker.linkedWorkstreams}
             activeWorkstreams={workstreamLinker.activeWorkstreams}
-            onStartWorkstream={(_id, title) => workstreamLinker.startWorkstream(title)}
+            onStartWorkstream={async (_id, title) => {
+              const workstreamId = await workstreamLinker.startWorkstream(title);
+              if (workstreamId) {
+                await sendWorkstreamMessage(
+                  workstreamId,
+                  `Investigate this alert and help with incident response.`,
+                );
+              }
+            }}
           />
         )}
       </DrawerHeaderActions>

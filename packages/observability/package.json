@@ -1,0 +1,6 @@
+{
+  "name": "observability",
+  "dependencies": {
+    "recharts": "^2.15.0"
+  }
+}

@@ -13,7 +13,7 @@
     "1.0.0": {
       "ref": "main",
       "driftCompat": ">=0.8.0",
-      "publishedAt": "2026-02-26T15:11:09.413Z"
+      "publishedAt": "2026-02-26T20:25:14.031Z"
     }
   },
   "keywords": [],
@@ -30,7 +30,9 @@
       "floating-widget"
     ],
     "entities": [
-      "active_alert"
+      "active_alert",
+      "service_logs",
+      "service_metrics"
     ],
     "operations": [
       {

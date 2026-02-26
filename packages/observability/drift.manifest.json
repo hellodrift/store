@@ -20,10 +20,20 @@
       "label": "Observability",
       "icon": "activity"
     },
-    "entity-drawer": {
-      "component": "components/AlertDrawer.tsx",
-      "entityType": "active_alert"
-    },
+    "entity-drawer": [
+      {
+        "component": "components/AlertDrawer.tsx",
+        "entityType": "active_alert"
+      },
+      {
+        "component": "components/MetricsDrawer.tsx",
+        "entityType": "service_metrics"
+      },
+      {
+        "component": "components/LogsDrawer.tsx",
+        "entityType": "service_logs"
+      }
+    ],
     "entity-widget": {
       "component": "components/AlertWidget.tsx",
       "entityType": "active_alert"

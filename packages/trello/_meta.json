@@ -13,11 +13,11 @@
     "0.1.0": {
       "ref": "main",
       "driftCompat": ">=0.8.0",
-      "publishedAt": "2026-02-26T15:11:09.412Z"
+      "publishedAt": "2026-02-26T20:25:14.030Z"
     }
   },
   "keywords": [],
-  "icon": "layout",
+  "icon": "kanban",
   "provides": {
     "integrations": [
       "trello"

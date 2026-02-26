@@ -76,42 +76,40 @@ export default defineIntegration<ObsClient>({
   description: 'Prometheus, Loki, Alertmanager, and Grafana stack monitoring',
   icon: 'activity',
 
-  // Credentials stored encrypted
+  // Only the two required Grafana credentials. Everything else uses hardcoded defaults.
   secureKeys: [
+    'grafanaUser',
     'grafanaPassword',
-    'grafanaApiKey',
-    'prometheusPassword',
-    'lokiPassword',
-    'alertmanagerPassword',
   ],
 
   createClient: async (ctx) => {
-    // URLs — storage → env vars → hardcoded defaults
-    let prometheusUrl = (await ctx.storage.get('prometheusUrl')) || process.env['PROMETHEUS_URL'] || DEFAULT_URLS.prometheusUrl;
-    let lokiUrl = (await ctx.storage.get('lokiUrl')) || process.env['LOKI_URL'] || DEFAULT_URLS.lokiUrl;
-    let alertmanagerUrl = (await ctx.storage.get('alertmanagerUrl')) || process.env['ALERTMANAGER_URL'] || DEFAULT_URLS.alertmanagerUrl;
-    let grafanaUrl = (await ctx.storage.get('grafanaUrl')) || process.env['GRAFANA_URL'] || DEFAULT_URLS.grafanaUrl;
+    // URLs — hardcoded defaults (configurable via Settings tab in-session only)
+    let prometheusUrl = DEFAULT_URLS.prometheusUrl;
+    let lokiUrl = DEFAULT_URLS.lokiUrl;
+    let alertmanagerUrl = DEFAULT_URLS.alertmanagerUrl;
+    let grafanaUrl = DEFAULT_URLS.grafanaUrl;
 
-    // Credentials — integration storage only (configured via Settings tab)
+    // Credentials — only Grafana auth persisted; others are in-memory only
     let grafanaUser = (await ctx.storage.get('grafanaUser')) || null;
     let grafanaPassword = (await ctx.storage.get('grafanaPassword')) || null;
-    let grafanaApiKey = (await ctx.storage.get('grafanaApiKey')) || null;
-    let prometheusUser = (await ctx.storage.get('prometheusUser')) || null;
-    let prometheusPassword = (await ctx.storage.get('prometheusPassword')) || null;
-    let lokiUser = (await ctx.storage.get('lokiUser')) || null;
-    let lokiPassword = (await ctx.storage.get('lokiPassword')) || null;
-    let alertmanagerUser = (await ctx.storage.get('alertmanagerUser')) || null;
-    let alertmanagerPassword = (await ctx.storage.get('alertmanagerPassword')) || null;
+    let grafanaApiKey: string | null = null;
+    let prometheusUser: string | null = null;
+    let prometheusPassword: string | null = null;
+    let lokiUser: string | null = null;
+    let lokiPassword: string | null = null;
+    let alertmanagerUser: string | null = null;
+    let alertmanagerPassword: string | null = null;
 
     const saveSettings = async (updates: ObsSettingsUpdate): Promise<void> => {
       for (const [key, value] of Object.entries(updates)) {
-        if (value === undefined) continue; // undefined = don't touch
-
-        // Empty string or null = clear the value
+        if (value === undefined) continue;
         const stored = value === '' ? null : value;
-        await ctx.storage.set(key, stored);
 
-        // Update in-memory state immediately so next resolver call uses new values
+        // Only persist grafana credentials to storage; update all in-memory
+        if (key === 'grafanaUser' || key === 'grafanaPassword') {
+          await ctx.storage.set(key, stored);
+        }
+
         switch (key) {
           case 'prometheusUrl': prometheusUrl = stored || DEFAULT_URLS.prometheusUrl; break;
           case 'lokiUrl': lokiUrl = stored || DEFAULT_URLS.lokiUrl; break;
