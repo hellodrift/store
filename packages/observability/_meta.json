@@ -1,0 +1,60 @@
+{
+  "id": "observability",
+  "displayName": "Observability",
+  "description": "Stack health, live logs, metrics, and alert incident management. Integrates Prometheus, Loki, and Alertmanager into the Drift workflow.",
+  "author": {
+    "name": "Drift Team"
+  },
+  "license": "MIT",
+  "repository": "hellodrift/store",
+  "path": "packages/observability",
+  "latest": "1.0.0",
+  "versions": {
+    "1.0.0": {
+      "ref": "main",
+      "driftCompat": ">=0.8.0",
+      "publishedAt": "2026-02-26T14:51:36.596Z"
+    }
+  },
+  "keywords": [],
+  "icon": "activity",
+  "provides": {
+    "integrations": [
+      "observability"
+    ],
+    "canvases": [
+      "nav-sidebar",
+      "drawer",
+      "entity-drawer",
+      "entity-widget",
+      "floating-widget"
+    ],
+    "entities": [
+      "active_alert"
+    ],
+    "operations": [
+      {
+        "id": "test_connection",
+        "description": "Test connectivity to all observability services"
+      },
+      {
+        "id": "query_prometheus",
+        "description": "Execute an instant PromQL query"
+      },
+      {
+        "id": "get_alerts",
+        "description": "Get all currently active alerts from Alertmanager"
+      },
+      {
+        "id": "silence_alert",
+        "description": "Create a silence to suppress an alert for a specified duration",
+        "mutation": true
+      },
+      {
+        "id": "query_loki",
+        "description": "Query Loki logs with LogQL"
+      }
+    ]
+  },
+  "verified": true
+}

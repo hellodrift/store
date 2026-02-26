@@ -1,0 +1,86 @@
+type ObsAlert {
+  fingerprint: String!
+  alertname: String!
+  severity: String
+  state: String!
+  summary: String
+  description: String
+  labels: String      # JSON-encoded key-value label map
+  startsAt: String!
+  duration: String!
+  generatorURL: String
+  silencedBy: [String!]!
+  linkedContext: String  # Rich markdown injected into AI when this entity is referenced in a workstream
+}
+
+type ObsTarget {
+  job: String!
+  instance: String!
+  health: String!     # up | down | unknown
+  lastScrape: String
+  lastError: String
+}
+
+type ObsLogLine {
+  timestamp: String!
+  service: String!
+  level: String!
+  message: String!
+  labels: String      # JSON-encoded stream labels
+}
+
+type ObsStats {
+  alertCount: Int!
+  criticalCount: Int!
+  warningCount: Int!
+  healthyTargets: Int!
+  totalTargets: Int!
+  allHealthy: Boolean!
+  storageBytes: Float
+  ingestionRate: Float
+  activeSeries: Float
+}
+
+type ObsConfig {
+  prometheusUrl: String!
+  lokiUrl: String!
+  alertmanagerUrl: String!
+  grafanaUrl: String!
+}
+
+extend type Query {
+  # Single alert by fingerprint
+  obsAlert(fingerprint: String!): ObsAlert
+
+  # All active alerts from Alertmanager
+  obsAlerts: [ObsAlert!]!
+
+  # Summary for sidebar widget (alert counts + stack health)
+  obsSummary: ObsStats!
+
+  # Prometheus scrape targets
+  obsTargets: [ObsTarget!]!
+
+  # Log entries from Loki
+  obsLogs(
+    logql: String
+    limit: Int
+    since: String
+  ): [ObsLogLine!]!
+
+  # Available Loki label values (for service/level filters)
+  obsLokiLabelValues(label: String!): [String!]!
+
+  # Current resolved config (URLs)
+  obsConfig: ObsConfig!
+}
+
+extend type Mutation {
+  # Create an Alertmanager silence
+  obsSilenceAlert(
+    alertname: String!
+    labels: String      # JSON-encoded label matchers for precise matching
+    durationMinutes: Int!
+    comment: String
+  ): EntityActionResult!
+}

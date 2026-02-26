@@ -14,7 +14,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-26T14:15:20.433Z"
+        "publishedAt": "2026-02-26T14:51:36.495Z"
       }
     },
     "keywords": [],
@@ -140,7 +140,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-26T14:15:20.435Z"
+        "publishedAt": "2026-02-26T14:51:36.521Z"
       }
     },
     "keywords": [],
@@ -249,7 +249,7 @@
       "0.3.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-26T14:15:20.435Z"
+        "publishedAt": "2026-02-26T14:51:36.530Z"
       }
     },
     "keywords": [],
@@ -359,7 +359,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-26T14:15:20.436Z"
+        "publishedAt": "2026-02-26T14:51:36.543Z"
       }
     },
     "keywords": [],
@@ -391,7 +391,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-26T14:15:20.436Z"
+        "publishedAt": "2026-02-26T14:51:36.548Z"
       }
     },
     "keywords": [],
@@ -471,7 +471,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-26T14:15:20.436Z"
+        "publishedAt": "2026-02-26T14:51:36.569Z"
       }
     },
     "keywords": [],
@@ -556,7 +556,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-26T14:15:20.459Z"
+        "publishedAt": "2026-02-26T14:51:36.573Z"
       }
     },
     "keywords": [],
@@ -648,7 +648,7 @@
       "0.1.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-26T14:15:20.460Z"
+        "publishedAt": "2026-02-26T14:51:36.581Z"
       }
     },
     "keywords": [],
@@ -686,7 +686,7 @@
       "0.2.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-26T14:15:20.460Z"
+        "publishedAt": "2026-02-26T14:51:36.582Z"
       }
     },
     "keywords": [],
@@ -713,6 +713,66 @@
     "verified": true
   },
   {
+    "id": "observability",
+    "displayName": "Observability",
+    "description": "Stack health, live logs, metrics, and alert incident management. Integrates Prometheus, Loki, and Alertmanager into the Drift workflow.",
+    "author": {
+      "name": "Drift Team"
+    },
+    "license": "MIT",
+    "repository": "hellodrift/store",
+    "path": "packages/observability",
+    "latest": "1.0.0",
+    "versions": {
+      "1.0.0": {
+        "ref": "main",
+        "driftCompat": ">=0.8.0",
+        "publishedAt": "2026-02-26T14:51:36.596Z"
+      }
+    },
+    "keywords": [],
+    "icon": "activity",
+    "provides": {
+      "integrations": [
+        "observability"
+      ],
+      "canvases": [
+        "nav-sidebar",
+        "drawer",
+        "entity-drawer",
+        "entity-widget",
+        "floating-widget"
+      ],
+      "entities": [
+        "active_alert"
+      ],
+      "operations": [
+        {
+          "id": "test_connection",
+          "description": "Test connectivity to all observability services"
+        },
+        {
+          "id": "query_prometheus",
+          "description": "Execute an instant PromQL query"
+        },
+        {
+          "id": "get_alerts",
+          "description": "Get all currently active alerts from Alertmanager"
+        },
+        {
+          "id": "silence_alert",
+          "description": "Create a silence to suppress an alert for a specified duration",
+          "mutation": true
+        },
+        {
+          "id": "query_loki",
+          "description": "Query Loki logs with LogQL"
+        }
+      ]
+    },
+    "verified": true
+  },
+  {
     "id": "wyze-cameras",
     "displayName": "Wyze Cameras",
     "description": "Live Wyze camera streams with WebRTC video and camera controls",
@@ -727,7 +787,7 @@
       "0.2.0": {
         "ref": "main",
         "driftCompat": ">=0.8.0",
-        "publishedAt": "2026-02-26T14:15:20.460Z"
+        "publishedAt": "2026-02-26T14:51:36.607Z"
       }
     },
     "keywords": [],

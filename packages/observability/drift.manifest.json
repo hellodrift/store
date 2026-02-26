@@ -1,0 +1,37 @@
+{
+  "name": "observability",
+  "displayName": "Observability",
+  "description": "Stack health, live logs, metrics, and alert incident management. Integrates Prometheus, Loki, and Alertmanager into the Drift workflow.",
+  "version": "1.0.0",
+  "integrations": ["observability"],
+  "graphql": {
+    "schema": "schema.graphql",
+    "resolvers": "resolvers.ts"
+  },
+  "canvases": {
+    "nav-sidebar": {
+      "component": "components/NavSection.tsx",
+      "label": "Observability",
+      "icon": "activity",
+      "priority": 40
+    },
+    "drawer": {
+      "component": "components/Drawer.tsx",
+      "label": "Observability",
+      "icon": "activity"
+    },
+    "entity-drawer": {
+      "component": "components/AlertDrawer.tsx",
+      "entityType": "active_alert"
+    },
+    "entity-widget": {
+      "component": "components/AlertWidget.tsx",
+      "entityType": "active_alert"
+    },
+    "floating-widget": {
+      "component": "components/AlertWidget.tsx",
+      "entityType": "active_alert",
+      "autoDetach": false
+    }
+  }
+}
