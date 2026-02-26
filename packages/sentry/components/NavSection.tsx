@@ -1,5 +1,5 @@
 import { NavSection, NavItem, NavSettingsButton, NavHeaderActions } from '@drift/ui/components';
-import { useEntityQuery, gql, logger, useEntityDrawer, useEntitySelection } from '@drift/plugin-api';
+import { useEntityQuery, gql, logger, useEntityDrawer, useEntitySelection, buildEntityURI } from '@drift/plugin-api';
 import { useSentrySettings } from './useSentrySettings';
 
 const GET_ISSUES = gql`
@@ -92,12 +92,12 @@ export default function SentryNav() {
 
   const handleIssueSelect = (issue: SentryIssueNav) => {
     logger.info('Sentry issue selected', { id: issue.id, shortId: issue.shortId });
-    openEntityDrawer(`@drift//sentry_issue/${issue.id}`);
+    openEntityDrawer(buildEntityURI('sentry_issue', issue.id, `${issue.shortId} ${issue.title}`));
   };
 
   const section = {
     id: 'sentry-issues',
-    label: `Issues${issues.length ? ` (${issues.length})` : ''}`,
+    label: `Sentry${issues.length ? ` (${issues.length})` : ''}`,
     items: [],
     isLoading: loading && !data,
     emptyState: error && !data ? error.message : 'No issues found',

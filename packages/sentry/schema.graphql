@@ -55,6 +55,7 @@ type SentryEvent {
   tags: [SentryTag!]
   user: SentryEventUser
   entries: [SentryEventEntry!]
+  contexts: JSON
   release: SentryReleaseRef
 }
 

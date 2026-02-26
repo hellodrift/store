@@ -163,7 +163,8 @@ export const sentryIntegration = defineIntegration<SentryClient>({
         required: false,
         flow: {
           grantType: 'authorization_code',
-          clientId: process.env.SENTRY_OAUTH_CLIENT_ID ?? '',
+          clientId: process.env.SENTRY_OAUTH_CLIENT_ID ?? '69e6578cb3eff93616c7d730e06a7a1b90a8d9a2cee21d4c3447936ec5b1f163',
+          clientSecret: process.env.SENTRY_OAUTH_CLIENT_SECRET ?? '21f7fdf7383cf7517f46096c649540d3eeb3e0665cd4f9be0eefbc8aaf489f39',
           authorizationUrl: 'https://sentry.io/oauth/authorize/',
           tokenUrl: 'https://sentry.io/oauth/token/',
           scopes: ['event:read', 'event:write', 'project:read', 'org:read', 'team:read', 'member:read'],
