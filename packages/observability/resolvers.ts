@@ -9,22 +9,44 @@
  *   ctx.logger — scoped logger
  */
 
+import type { ObsClient } from './integrations/observability';
+
 // ─── Helpers ──────────────────────────────────────────────────────────────
 
-function getClient(ctx: any): any {
+function getClient(ctx: any): ObsClient | null {
   return ctx.integrations?.observability?.client ?? null;
 }
 
-async function httpGet(url: string): Promise<any> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+/** Build a Basic Auth Authorization header, or empty object if no credentials. */
+function basicAuthHeader(user: string | null, pass: string | null): Record<string, string> {
+  if (user && pass) {
+    const b64 = Buffer.from(`${user}:${pass}`).toString('base64');
+    return { Authorization: `Basic ${b64}` };
+  }
+  return {};
+}
+
+/** Build auth headers for Grafana: API key takes priority over basic auth. */
+function grafanaAuthHeader(client: ObsClient): Record<string, string> {
+  if (client.grafanaApiKey) {
+    return { Authorization: `Bearer ${client.grafanaApiKey}` };
+  }
+  return basicAuthHeader(client.grafanaUser, client.grafanaPassword);
+}
+
+async function httpGet(url: string, headers?: Record<string, string>): Promise<any> {
+  const res = await fetch(url, {
+    headers: headers ?? {},
+    signal: AbortSignal.timeout(10000),
+  });
   if (!res.ok) throw new Error(`HTTP ${res.status} from ${url}`);
   return res.json();
 }
 
-async function httpPost(url: string, body: unknown): Promise<any> {
+async function httpPost(url: string, body: unknown, headers?: Record<string, string>): Promise<any> {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(headers ?? {}) },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(10000),
   });
@@ -124,7 +146,8 @@ export default {
                 `query=${encodeURIComponent(logql)}&` +
                 `start=${startNs}&end=${endNs}&limit=5&direction=backward`;
 
-              const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+              const lokiHeaders = client ? basicAuthHeader(client.lokiUser, client.lokiPassword) : {};
+              const res = await fetch(url, { headers: lokiHeaders, signal: AbortSignal.timeout(5000) });
               if (res.ok) {
                 const lokiData = await res.json();
                 const recentErrors: string[] = [];
@@ -164,7 +187,10 @@ export default {
       if (!client) return null;
 
       try {
-        const alerts = await httpGet(`${client.alertmanagerUrl}/api/v2/alerts`);
+        const alerts = await httpGet(
+          `${client.alertmanagerUrl}/api/v2/alerts`,
+          basicAuthHeader(client.alertmanagerUser, client.alertmanagerPassword),
+        );
         const alert = alerts.find((a: any) => a.fingerprint === fingerprint);
         return alert ? alertToGQL(alert) : null;
       } catch (err: any) {
@@ -178,7 +204,10 @@ export default {
       if (!client) return [];
 
       try {
-        const alerts = await httpGet(`${client.alertmanagerUrl}/api/v2/alerts`);
+        const alerts = await httpGet(
+          `${client.alertmanagerUrl}/api/v2/alerts`,
+          basicAuthHeader(client.alertmanagerUser, client.alertmanagerPassword),
+        );
         return (alerts ?? []).map(alertToGQL);
       } catch (err: any) {
         ctx.logger.error('obsAlerts failed', { error: err?.message });
@@ -196,13 +225,16 @@ export default {
         };
       }
 
+      const promHeaders = basicAuthHeader(client.prometheusUser, client.prometheusPassword);
+      const amHeaders = basicAuthHeader(client.alertmanagerUser, client.alertmanagerPassword);
+
       const [alertsResult, targetsResult, storageResult, ingestionResult, seriesResult] =
         await Promise.allSettled([
-          httpGet(`${client.alertmanagerUrl}/api/v2/alerts`),
-          httpGet(`${client.prometheusUrl}/api/v1/targets`),
-          httpGet(`${client.prometheusUrl}/api/v1/query?query=${encodeURIComponent('prometheus_tsdb_storage_blocks_bytes + prometheus_tsdb_head_chunks_storage_size_bytes')}`),
-          httpGet(`${client.prometheusUrl}/api/v1/query?query=${encodeURIComponent('rate(prometheus_tsdb_head_samples_appended_total[5m])')}`),
-          httpGet(`${client.prometheusUrl}/api/v1/query?query=${encodeURIComponent('prometheus_tsdb_head_series')}`),
+          httpGet(`${client.alertmanagerUrl}/api/v2/alerts`, amHeaders),
+          httpGet(`${client.prometheusUrl}/api/v1/targets`, promHeaders),
+          httpGet(`${client.prometheusUrl}/api/v1/query?query=${encodeURIComponent('prometheus_tsdb_storage_blocks_bytes + prometheus_tsdb_head_chunks_storage_size_bytes')}`, promHeaders),
+          httpGet(`${client.prometheusUrl}/api/v1/query?query=${encodeURIComponent('rate(prometheus_tsdb_head_samples_appended_total[5m])')}`, promHeaders),
+          httpGet(`${client.prometheusUrl}/api/v1/query?query=${encodeURIComponent('prometheus_tsdb_head_series')}`, promHeaders),
         ]);
 
       // Alerts
@@ -242,7 +274,10 @@ export default {
       if (!client) return [];
 
       try {
-        const data = await httpGet(`${client.prometheusUrl}/api/v1/targets`);
+        const data = await httpGet(
+          `${client.prometheusUrl}/api/v1/targets`,
+          basicAuthHeader(client.prometheusUser, client.prometheusPassword),
+        );
         const targets = data?.data?.activeTargets ?? [];
         return targets.map((t: any) => ({
           job: t.labels?.job ?? t.discoveredLabels?.job ?? 'unknown',
@@ -265,7 +300,7 @@ export default {
       const client = getClient(ctx);
       if (!client) return [];
 
-      const query = logql || '{service=~".+"} | json';
+      const query = logql || '{service=~".+"}';
       const startMs = since ? new Date(since).getTime() : Date.now() - 15 * 60 * 1000;
       const startNs = startMs * 1_000_000;
       const endNs = Date.now() * 1_000_000;
@@ -277,7 +312,7 @@ export default {
           `start=${startNs}&end=${endNs}&` +
           `limit=${maxLines}&direction=backward`;
 
-        const data = await httpGet(url);
+        const data = await httpGet(url, basicAuthHeader(client.lokiUser, client.lokiPassword));
         const lines: any[] = [];
 
         for (const stream of data?.data?.result ?? []) {
@@ -324,7 +359,10 @@ export default {
       if (!client) return [];
 
       try {
-        const data = await httpGet(`${client.lokiUrl}/loki/api/v1/label/${encodeURIComponent(label)}/values`);
+        const data = await httpGet(
+          `${client.lokiUrl}/loki/api/v1/label/${encodeURIComponent(label)}/values`,
+          basicAuthHeader(client.lokiUser, client.lokiPassword),
+        );
         return data?.data ?? [];
       } catch (err: any) {
         ctx.logger.error('obsLokiLabelValues failed', { label, error: err?.message });
@@ -334,11 +372,18 @@ export default {
 
     obsConfig: async (_: unknown, __: unknown, ctx: any) => {
       const client = getClient(ctx);
+      const status = client?.getAuthStatus?.() ?? {
+        grafanaAuthType: null,
+        prometheusAuth: false,
+        lokiAuth: false,
+        alertmanagerAuth: false,
+      };
       return {
-        prometheusUrl: client?.prometheusUrl ?? 'http://localhost:9090',
-        lokiUrl: client?.lokiUrl ?? 'http://localhost:3100',
-        alertmanagerUrl: client?.alertmanagerUrl ?? 'http://localhost:9093',
-        grafanaUrl: client?.grafanaUrl ?? 'http://localhost:3200',
+        prometheusUrl: client?.prometheusUrl ?? DEFAULT_URLS.prometheusUrl,
+        lokiUrl: client?.lokiUrl ?? DEFAULT_URLS.lokiUrl,
+        alertmanagerUrl: client?.alertmanagerUrl ?? DEFAULT_URLS.alertmanagerUrl,
+        grafanaUrl: client?.grafanaUrl ?? DEFAULT_URLS.grafanaUrl,
+        ...status,
       };
     },
   },
@@ -385,13 +430,17 @@ export default {
           ? `${Math.round(durationMinutes / 60)}h`
           : `${durationMinutes}m`;
 
-        await httpPost(`${client.alertmanagerUrl}/api/v2/silences`, {
-          matchers,
-          startsAt: new Date().toISOString(),
-          endsAt,
-          createdBy: 'drift-plugin',
-          comment: comment || `Silenced for ${durationLabel} via Drift`,
-        });
+        await httpPost(
+          `${client.alertmanagerUrl}/api/v2/silences`,
+          {
+            matchers,
+            startsAt: new Date().toISOString(),
+            endsAt,
+            createdBy: 'drift-plugin',
+            comment: comment || `Silenced for ${durationLabel} via Drift`,
+          },
+          basicAuthHeader(client.alertmanagerUser, client.alertmanagerPassword),
+        );
 
         return {
           success: true,
@@ -405,5 +454,33 @@ export default {
         };
       }
     },
+
+    saveObsSettings: async (
+      _: unknown,
+      { input }: { input: Record<string, string | null | undefined> },
+      ctx: any,
+    ) => {
+      const client = getClient(ctx);
+      if (!client?.saveSettings) {
+        return { success: false, message: 'Integration client unavailable' };
+      }
+
+      try {
+        await client.saveSettings(input);
+        ctx.logger.info('Observability settings saved');
+        return { success: true, message: 'Settings saved' };
+      } catch (err: any) {
+        ctx.logger.error('saveObsSettings failed', { error: err?.message });
+        return { success: false, message: err?.message ?? 'Failed to save settings' };
+      }
+    },
   },
+};
+
+// Default URLs (mirrored here for obsConfig fallback)
+const DEFAULT_URLS = {
+  prometheusUrl: 'http://localhost:9090',
+  lokiUrl: 'http://localhost:3100',
+  alertmanagerUrl: 'http://localhost:9093',
+  grafanaUrl: 'http://localhost:3200',
 };

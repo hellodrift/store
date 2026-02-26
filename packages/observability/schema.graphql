@@ -46,6 +46,35 @@ type ObsConfig {
   lokiUrl: String!
   alertmanagerUrl: String!
   grafanaUrl: String!
+  # Auth status (no secrets exposed — only whether credentials are configured)
+  grafanaAuthType: String    # "api_key" | "basic" | null
+  prometheusAuth: Boolean!
+  lokiAuth: Boolean!
+  alertmanagerAuth: Boolean!
+}
+
+# Input for saving all observability settings in one mutation.
+# Omitting a field leaves it unchanged.
+# Passing null or "" clears it (URLs revert to defaults, credentials are removed).
+input ObsSettingsInput {
+  # Service URLs
+  prometheusUrl: String
+  lokiUrl: String
+  alertmanagerUrl: String
+  grafanaUrl: String
+  # Grafana credentials
+  grafanaUser: String
+  grafanaPassword: String
+  grafanaApiKey: String
+  # Prometheus basic auth
+  prometheusUser: String
+  prometheusPassword: String
+  # Loki basic auth
+  lokiUser: String
+  lokiPassword: String
+  # Alertmanager basic auth
+  alertmanagerUser: String
+  alertmanagerPassword: String
 }
 
 extend type Query {
@@ -71,7 +100,7 @@ extend type Query {
   # Available Loki label values (for service/level filters)
   obsLokiLabelValues(label: String!): [String!]!
 
-  # Current resolved config (URLs)
+  # Current resolved config — URLs and credential status (no secrets)
   obsConfig: ObsConfig!
 }
 
@@ -83,4 +112,8 @@ extend type Mutation {
     durationMinutes: Int!
     comment: String
   ): EntityActionResult!
+
+  # Save service URLs and/or credentials to integration storage.
+  # Omit fields to leave them unchanged. Pass "" to clear.
+  saveObsSettings(input: ObsSettingsInput!): EntityActionResult!
 }

@@ -1,20 +1,65 @@
 /**
  * Observability Integration — Prometheus, Loki, Alertmanager, Grafana.
  *
- * No authentication required for the local dev stack.
- * createClient always returns a non-null client with default URLs.
- * URLs are configurable via plugin storage (written by the Settings UI).
+ * No authentication required for the local dev stack by default.
+ * Credentials are stored in integration storage and used when present.
+ * URLs are configurable via the plugin Settings tab.
  */
 
 import { z } from 'zod';
 import { defineIntegration } from '@drift/entity-sdk';
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+export interface ObsSettingsUpdate {
+  // URLs (null = clear to default)
+  prometheusUrl?: string | null;
+  lokiUrl?: string | null;
+  alertmanagerUrl?: string | null;
+  grafanaUrl?: string | null;
+  // Grafana auth (null = clear)
+  grafanaUser?: string | null;
+  grafanaPassword?: string | null;
+  grafanaApiKey?: string | null;
+  // Prometheus auth
+  prometheusUser?: string | null;
+  prometheusPassword?: string | null;
+  // Loki auth
+  lokiUser?: string | null;
+  lokiPassword?: string | null;
+  // Alertmanager auth
+  alertmanagerUser?: string | null;
+  alertmanagerPassword?: string | null;
+}
+
+export interface ObsAuthStatus {
+  grafanaAuthType: 'api_key' | 'basic' | null;
+  prometheusAuth: boolean;
+  lokiAuth: boolean;
+  alertmanagerAuth: boolean;
+}
 
 export interface ObsClient {
   prometheusUrl: string;
   lokiUrl: string;
   alertmanagerUrl: string;
   grafanaUrl: string;
+  // Credentials (null = not configured)
+  grafanaUser: string | null;
+  grafanaPassword: string | null;
+  grafanaApiKey: string | null;
+  prometheusUser: string | null;
+  prometheusPassword: string | null;
+  lokiUser: string | null;
+  lokiPassword: string | null;
+  alertmanagerUser: string | null;
+  alertmanagerPassword: string | null;
+  // Methods
+  saveSettings: (updates: ObsSettingsUpdate) => Promise<void>;
+  getAuthStatus: () => ObsAuthStatus;
 }
+
+// ─── Defaults ───────────────────────────────────────────────────────────────
 
 const DEFAULT_URLS = {
   prometheusUrl: 'http://localhost:9090',
@@ -31,14 +76,88 @@ export default defineIntegration<ObsClient>({
   description: 'Prometheus, Loki, Alertmanager, and Grafana stack monitoring',
   icon: 'activity',
 
-  secureKeys: [],
+  // Credentials stored encrypted
+  secureKeys: [
+    'grafanaPassword',
+    'grafanaApiKey',
+    'prometheusPassword',
+    'lokiPassword',
+    'alertmanagerPassword',
+  ],
 
   createClient: async (ctx) => {
-    const prometheusUrl = (await ctx.storage.get('prometheusUrl')) || DEFAULT_URLS.prometheusUrl;
-    const lokiUrl = (await ctx.storage.get('lokiUrl')) || DEFAULT_URLS.lokiUrl;
-    const alertmanagerUrl = (await ctx.storage.get('alertmanagerUrl')) || DEFAULT_URLS.alertmanagerUrl;
-    const grafanaUrl = (await ctx.storage.get('grafanaUrl')) || DEFAULT_URLS.grafanaUrl;
-    return { prometheusUrl, lokiUrl, alertmanagerUrl, grafanaUrl };
+    // URLs — storage → env vars → hardcoded defaults
+    let prometheusUrl = (await ctx.storage.get('prometheusUrl')) || process.env['PROMETHEUS_URL'] || DEFAULT_URLS.prometheusUrl;
+    let lokiUrl = (await ctx.storage.get('lokiUrl')) || process.env['LOKI_URL'] || DEFAULT_URLS.lokiUrl;
+    let alertmanagerUrl = (await ctx.storage.get('alertmanagerUrl')) || process.env['ALERTMANAGER_URL'] || DEFAULT_URLS.alertmanagerUrl;
+    let grafanaUrl = (await ctx.storage.get('grafanaUrl')) || process.env['GRAFANA_URL'] || DEFAULT_URLS.grafanaUrl;
+
+    // Credentials — integration storage only (configured via Settings tab)
+    let grafanaUser = (await ctx.storage.get('grafanaUser')) || null;
+    let grafanaPassword = (await ctx.storage.get('grafanaPassword')) || null;
+    let grafanaApiKey = (await ctx.storage.get('grafanaApiKey')) || null;
+    let prometheusUser = (await ctx.storage.get('prometheusUser')) || null;
+    let prometheusPassword = (await ctx.storage.get('prometheusPassword')) || null;
+    let lokiUser = (await ctx.storage.get('lokiUser')) || null;
+    let lokiPassword = (await ctx.storage.get('lokiPassword')) || null;
+    let alertmanagerUser = (await ctx.storage.get('alertmanagerUser')) || null;
+    let alertmanagerPassword = (await ctx.storage.get('alertmanagerPassword')) || null;
+
+    const saveSettings = async (updates: ObsSettingsUpdate): Promise<void> => {
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === undefined) continue; // undefined = don't touch
+
+        // Empty string or null = clear the value
+        const stored = value === '' ? null : value;
+        await ctx.storage.set(key, stored);
+
+        // Update in-memory state immediately so next resolver call uses new values
+        switch (key) {
+          case 'prometheusUrl': prometheusUrl = stored || DEFAULT_URLS.prometheusUrl; break;
+          case 'lokiUrl': lokiUrl = stored || DEFAULT_URLS.lokiUrl; break;
+          case 'alertmanagerUrl': alertmanagerUrl = stored || DEFAULT_URLS.alertmanagerUrl; break;
+          case 'grafanaUrl': grafanaUrl = stored || DEFAULT_URLS.grafanaUrl; break;
+          case 'grafanaUser': grafanaUser = stored; break;
+          case 'grafanaPassword': grafanaPassword = stored; break;
+          case 'grafanaApiKey': grafanaApiKey = stored; break;
+          case 'prometheusUser': prometheusUser = stored; break;
+          case 'prometheusPassword': prometheusPassword = stored; break;
+          case 'lokiUser': lokiUser = stored; break;
+          case 'lokiPassword': lokiPassword = stored; break;
+          case 'alertmanagerUser': alertmanagerUser = stored; break;
+          case 'alertmanagerPassword': alertmanagerPassword = stored; break;
+        }
+      }
+    };
+
+    const getAuthStatus = (): ObsAuthStatus => ({
+      grafanaAuthType: grafanaApiKey
+        ? 'api_key'
+        : grafanaUser && grafanaPassword
+        ? 'basic'
+        : null,
+      prometheusAuth: !!(prometheusUser && prometheusPassword),
+      lokiAuth: !!(lokiUser && lokiPassword),
+      alertmanagerAuth: !!(alertmanagerUser && alertmanagerPassword),
+    });
+
+    return {
+      get prometheusUrl() { return prometheusUrl; },
+      get lokiUrl() { return lokiUrl; },
+      get alertmanagerUrl() { return alertmanagerUrl; },
+      get grafanaUrl() { return grafanaUrl; },
+      get grafanaUser() { return grafanaUser; },
+      get grafanaPassword() { return grafanaPassword; },
+      get grafanaApiKey() { return grafanaApiKey; },
+      get prometheusUser() { return prometheusUser; },
+      get prometheusPassword() { return prometheusPassword; },
+      get lokiUser() { return lokiUser; },
+      get lokiPassword() { return lokiPassword; },
+      get alertmanagerUser() { return alertmanagerUser; },
+      get alertmanagerPassword() { return alertmanagerPassword; },
+      saveSettings,
+      getAuthStatus,
+    };
   },
 
   methods: [

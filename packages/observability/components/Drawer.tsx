@@ -34,7 +34,6 @@ import {
   useEntityDrawer,
   buildEntityURI,
 } from '@drift/plugin-api';
-import { useObsConfig } from './useObsConfig';
 
 // ─── GraphQL ──────────────────────────────────────────────────────────────
 
@@ -109,6 +108,19 @@ const OBS_CONFIG = gql`
       lokiUrl
       alertmanagerUrl
       grafanaUrl
+      grafanaAuthType
+      prometheusAuth
+      lokiAuth
+      alertmanagerAuth
+    }
+  }
+`;
+
+const SAVE_OBS_SETTINGS = gql`
+  mutation SaveObsSettings($input: ObsSettingsInput!) {
+    saveObsSettings(input: $input) {
+      success
+      message
     }
   }
 `;
@@ -663,9 +675,9 @@ function LogsTab() {
   const [since] = useState(() => new Date(Date.now() - 15 * 60 * 1000).toISOString());
 
   const logql = useMemo(() => {
-    const serviceFilter = service === 'all' ? 'service=~".+"' : `service="${service}"`;
-    const levelFilter = level === 'all' ? '' : ` | level="${level}"`;
-    return `{${serviceFilter}} | json${levelFilter}`;
+    const filters: string[] = [service === 'all' ? 'service=~".+"' : `service="${service}"`];
+    if (level !== 'all') filters.push(`level="${level}"`);
+    return `{${filters.join(', ')}}`;
   }, [service, level]);
 
   const { data, loading, refetch } = useEntityQuery(OBS_LOGS, {
@@ -736,8 +748,8 @@ function LogsTab() {
         {!loading && logs.length === 0 && (
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
             <div style={{ marginBottom: 8 }}>No log entries found</div>
-            <div style={{ fontSize: 11 }}>
-              Alloy must be running to collect logs ({logql})
+            <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+              {logql}
             </div>
           </div>
         )}
@@ -792,33 +804,216 @@ function LogsTab() {
   );
 }
 
+interface SettingsForm {
+  prometheusUrl: string;
+  lokiUrl: string;
+  alertmanagerUrl: string;
+  grafanaUrl: string;
+  grafanaUser: string;
+  grafanaPassword: string;
+  grafanaApiKey: string;
+  prometheusUser: string;
+  prometheusPassword: string;
+  lokiUser: string;
+  lokiPassword: string;
+  alertmanagerUser: string;
+  alertmanagerPassword: string;
+}
+
+function CredentialField({
+  label,
+  value,
+  onChange,
+  isSet,
+  onClear,
+  isPassword,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  isSet?: boolean;
+  onClear?: () => void;
+  isPassword?: boolean;
+  placeholder?: string;
+}) {
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+        <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</label>
+        {isSet && !value && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 10, color: 'var(--status-success, #30a46c)' }}>● Set</span>
+            {onClear && (
+              <button
+                onClick={onClear}
+                style={{
+                  fontSize: 10,
+                  padding: '1px 6px',
+                  borderRadius: 3,
+                  border: '1px solid var(--border-muted)',
+                  background: 'transparent',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+        {!isSet && !value && (
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Not set</span>
+        )}
+      </div>
+      <Input
+        type={isPassword ? 'password' : 'text'}
+        value={value}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
+        placeholder={isSet ? '••••••••  (leave blank to keep)' : (placeholder ?? '')}
+        style={{ fontSize: 12 }}
+      />
+    </div>
+  );
+}
+
 function SettingsTab() {
-  const [config, updateConfig] = useObsConfig();
-  const { data: serverConfig } = useEntityQuery(OBS_CONFIG);
+  const { data: serverConfig, refetch: refetchConfig } = useEntityQuery(OBS_CONFIG, {
+    fetchPolicy: 'cache-and-network',
+  });
+  const [saveSettings] = useEntityMutation(SAVE_OBS_SETTINGS);
+
+  const cfg = serverConfig?.obsConfig;
+
+  const [form, setForm] = useState<SettingsForm>({
+    prometheusUrl: '',
+    lokiUrl: '',
+    alertmanagerUrl: '',
+    grafanaUrl: '',
+    grafanaUser: '',
+    grafanaPassword: '',
+    grafanaApiKey: '',
+    prometheusUser: '',
+    prometheusPassword: '',
+    lokiUser: '',
+    lokiPassword: '',
+    alertmanagerUser: '',
+    alertmanagerPassword: '',
+  });
+
+  // Pre-fill URL fields once server config loads
+  const [urlsLoaded, setUrlsLoaded] = useState(false);
+  if (cfg && !urlsLoaded) {
+    setUrlsLoaded(true);
+    setForm((prev) => ({
+      ...prev,
+      prometheusUrl: cfg.prometheusUrl,
+      lokiUrl: cfg.lokiUrl,
+      alertmanagerUrl: cfg.alertmanagerUrl,
+      grafanaUrl: cfg.grafanaUrl,
+    }));
+  }
+
+  const [saveStatus, setSaveStatus] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const set = (key: keyof SettingsForm) => (value: string) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  // Mark a credential for clearing (send empty string to resolver)
+  const [clearFlags, setClearFlags] = useState<Partial<Record<keyof SettingsForm, boolean>>>({});
+  const markClear = (key: keyof SettingsForm) => {
+    setClearFlags((prev) => ({ ...prev, [key]: true }));
+    setForm((prev) => ({ ...prev, [key]: '' }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveStatus(null);
+
+    // Build input: only include fields that changed or are being cleared
+    const input: Record<string, string | null> = {};
+
+    // URLs — always send (pre-filled from server)
+    input.prometheusUrl = form.prometheusUrl || null;
+    input.lokiUrl = form.lokiUrl || null;
+    input.alertmanagerUrl = form.alertmanagerUrl || null;
+    input.grafanaUrl = form.grafanaUrl || null;
+
+    // Credentials — only include if the user typed something, or if flagged for clearing
+    const credFields: Array<keyof SettingsForm> = [
+      'grafanaUser', 'grafanaPassword', 'grafanaApiKey',
+      'prometheusUser', 'prometheusPassword',
+      'lokiUser', 'lokiPassword',
+      'alertmanagerUser', 'alertmanagerPassword',
+    ];
+    for (const key of credFields) {
+      if (clearFlags[key]) {
+        input[key] = null; // clear
+      } else if (form[key]) {
+        input[key] = form[key]; // set new value
+      }
+      // If empty and not flagged = leave unchanged (don't include in input)
+    }
+
+    try {
+      const result = await saveSettings({ variables: { input } });
+      const { success, message } = result.data?.saveObsSettings ?? {};
+      setSaveStatus({ ok: success ?? false, msg: message ?? 'Done' });
+      if (success) {
+        // Clear the form credential fields and clear flags, then refetch status
+        setForm((prev) => ({
+          ...prev,
+          grafanaUser: '', grafanaPassword: '', grafanaApiKey: '',
+          prometheusUser: '', prometheusPassword: '',
+          lokiUser: '', lokiPassword: '',
+          alertmanagerUser: '', alertmanagerPassword: '',
+        }));
+        setClearFlags({});
+        refetchConfig();
+      }
+    } catch (err: any) {
+      setSaveStatus({ ok: false, msg: err?.message ?? 'Failed to save' });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setSaveStatus(null), 4000);
+    }
+  };
 
   return (
     <div style={{ padding: '12px 16px' }}>
-      <ContentSection title="Service URLs">
-        <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 12 }}>
-          Default URLs for local dev. Changes apply to component-level polling.
-          Resolver URLs are set in integration storage.
+      {/* Status banner */}
+      {saveStatus && (
+        <div
+          style={{
+            padding: '8px 12px',
+            borderRadius: 6,
+            marginBottom: 12,
+            fontSize: 12,
+            background: saveStatus.ok ? 'rgba(48, 164, 108, 0.1)' : 'rgba(229, 72, 77, 0.1)',
+            color: saveStatus.ok ? 'var(--status-success, #30a46c)' : 'var(--status-error)',
+            border: `1px solid ${saveStatus.ok ? 'rgba(48, 164, 108, 0.3)' : 'rgba(229, 72, 77, 0.3)'}`,
+          }}
+        >
+          {saveStatus.msg}
         </div>
+      )}
 
+      {/* Service URLs */}
+      <ContentSection title="Service URLs">
         {[
-          { key: 'prometheusUrl', label: 'Prometheus', placeholder: 'http://localhost:9090' },
-          { key: 'lokiUrl', label: 'Loki', placeholder: 'http://localhost:3100' },
-          { key: 'alertmanagerUrl', label: 'Alertmanager', placeholder: 'http://localhost:9093' },
-          { key: 'grafanaUrl', label: 'Grafana', placeholder: 'http://localhost:3200' },
+          { key: 'prometheusUrl' as const, label: 'Prometheus', placeholder: 'http://localhost:9090' },
+          { key: 'lokiUrl' as const, label: 'Loki', placeholder: 'http://localhost:3100' },
+          { key: 'alertmanagerUrl' as const, label: 'Alertmanager', placeholder: 'http://localhost:9093' },
+          { key: 'grafanaUrl' as const, label: 'Grafana', placeholder: 'http://localhost:3200' },
         ].map(({ key, label, placeholder }) => (
           <div key={key} style={{ marginBottom: 10 }}>
             <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 3 }}>
               {label}
             </label>
             <Input
-              value={config[key as keyof typeof config]}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                updateConfig({ [key]: e.target.value })
-              }
+              value={form[key]}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => set(key)(e.target.value)}
               placeholder={placeholder}
               style={{ fontSize: 12 }}
             />
@@ -826,16 +1021,102 @@ function SettingsTab() {
         ))}
       </ContentSection>
 
-      {serverConfig?.obsConfig && (
-        <ContentSection title="Resolved Config (from Integration)">
-          <MetadataList>
-            <MetadataRow label="Prometheus" value={serverConfig.obsConfig.prometheusUrl} />
-            <MetadataRow label="Loki" value={serverConfig.obsConfig.lokiUrl} />
-            <MetadataRow label="Alertmanager" value={serverConfig.obsConfig.alertmanagerUrl} />
-            <MetadataRow label="Grafana" value={serverConfig.obsConfig.grafanaUrl} />
-          </MetadataList>
-        </ContentSection>
-      )}
+      {/* Grafana credentials */}
+      <ContentSection title="Grafana Credentials">
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+          API key takes priority over username/password when both are set.
+          {cfg?.grafanaAuthType === 'api_key' && (
+            <span style={{ color: 'var(--status-success, #30a46c)', marginLeft: 6 }}>
+              ● Using API key
+            </span>
+          )}
+          {cfg?.grafanaAuthType === 'basic' && (
+            <span style={{ color: 'var(--status-success, #30a46c)', marginLeft: 6 }}>
+              ● Using basic auth
+            </span>
+          )}
+        </div>
+        <CredentialField
+          label="Username"
+          value={form.grafanaUser}
+          onChange={set('grafanaUser')}
+          isSet={cfg?.grafanaAuthType === 'basic'}
+        />
+        <CredentialField
+          label="Password"
+          value={form.grafanaPassword}
+          onChange={set('grafanaPassword')}
+          isSet={cfg?.grafanaAuthType === 'basic'}
+          onClear={() => markClear('grafanaPassword')}
+          isPassword
+        />
+        <CredentialField
+          label="API Key / Service Account Token"
+          value={form.grafanaApiKey}
+          onChange={set('grafanaApiKey')}
+          isSet={cfg?.grafanaAuthType === 'api_key'}
+          onClear={() => markClear('grafanaApiKey')}
+          isPassword
+          placeholder="glsa_..."
+        />
+      </ContentSection>
+
+      {/* Prometheus credentials */}
+      <ContentSection title="Prometheus Credentials">
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+          Basic auth for Prometheus API access.
+          {cfg?.prometheusAuth && (
+            <span style={{ color: 'var(--status-success, #30a46c)', marginLeft: 6 }}>● Set</span>
+          )}
+        </div>
+        <CredentialField label="Username" value={form.prometheusUser} onChange={set('prometheusUser')} isSet={cfg?.prometheusAuth} />
+        <CredentialField label="Password" value={form.prometheusPassword} onChange={set('prometheusPassword')} isSet={cfg?.prometheusAuth} onClear={() => markClear('prometheusPassword')} isPassword />
+      </ContentSection>
+
+      {/* Loki credentials */}
+      <ContentSection title="Loki Credentials">
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+          Basic auth for Loki log queries.
+          {cfg?.lokiAuth && (
+            <span style={{ color: 'var(--status-success, #30a46c)', marginLeft: 6 }}>● Set</span>
+          )}
+        </div>
+        <CredentialField label="Username" value={form.lokiUser} onChange={set('lokiUser')} isSet={cfg?.lokiAuth} />
+        <CredentialField label="Password" value={form.lokiPassword} onChange={set('lokiPassword')} isSet={cfg?.lokiAuth} onClear={() => markClear('lokiPassword')} isPassword />
+      </ContentSection>
+
+      {/* Alertmanager credentials */}
+      <ContentSection title="Alertmanager Credentials">
+        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>
+          Basic auth for Alertmanager.
+          {cfg?.alertmanagerAuth && (
+            <span style={{ color: 'var(--status-success, #30a46c)', marginLeft: 6 }}>● Set</span>
+          )}
+        </div>
+        <CredentialField label="Username" value={form.alertmanagerUser} onChange={set('alertmanagerUser')} isSet={cfg?.alertmanagerAuth} />
+        <CredentialField label="Password" value={form.alertmanagerPassword} onChange={set('alertmanagerPassword')} isSet={cfg?.alertmanagerAuth} onClear={() => markClear('alertmanagerPassword')} isPassword />
+      </ContentSection>
+
+      {/* Save button */}
+      <div style={{ paddingTop: 4, paddingBottom: 16 }}>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            width: '100%',
+            padding: '8px 16px',
+            borderRadius: 6,
+            border: 'none',
+            background: saving ? 'var(--surface-subtle)' : 'var(--brand-primary)',
+            color: saving ? 'var(--text-muted)' : '#fff',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: saving ? 'default' : 'pointer',
+          }}
+        >
+          {saving ? 'Saving...' : 'Save Settings'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -854,7 +1135,8 @@ type TabId = typeof TABS[number]['id'];
 export default function ObsDrawer({ payload, drawer }: DrawerProps) {
   const initialTab = (payload?.tab as TabId) ?? 'alerts';
   const [activeTab, setActiveTab] = useState<TabId>(initialTab);
-  const [config] = useObsConfig();
+  const { data: configData } = useEntityQuery(OBS_CONFIG);
+  const grafanaUrl = configData?.obsConfig?.grafanaUrl ?? 'http://localhost:3200';
   const { openEntityDrawer } = useEntityDrawer();
 
   const handleOpenAlertEntity = useCallback((fingerprint: string, name: string) => {
@@ -907,7 +1189,7 @@ export default function ObsDrawer({ payload, drawer }: DrawerProps) {
           )}
           {activeTab === 'metrics' && (
             <div style={{ flex: 1, overflow: 'auto' }}>
-              <MetricsTab grafanaUrl={config.grafanaUrl} />
+              <MetricsTab grafanaUrl={grafanaUrl} />
             </div>
           )}
           {activeTab === 'logs' && <LogsTab />}
